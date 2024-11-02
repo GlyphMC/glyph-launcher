@@ -1,0 +1,15 @@
+@import "tailwindcss/base";
+@import "tailwindcss/components";
+@import "tailwindcss/utilities";
+
+*::-webkit-scrollbar {
+	@apply w-2 rounded-full;
+}
+
+*::-webkit-scrollbar-thumb {
+	@apply bg-zinc-600 opacity-0 transition-opacity duration-150 ease-linear hover:bg-zinc-800 hover:opacity-100;
+}
+
+*::-webkit-scrollbar-track {
+	@apply bg-zinc-400;
+}
