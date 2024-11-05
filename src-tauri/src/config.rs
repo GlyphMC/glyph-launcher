@@ -1,7 +1,7 @@
 use std::{fs, path::PathBuf};
 
 use anyhow::{anyhow, Error, Result};
-use dirs::home_dir;
+use dirs::config_dir;
 use serde::{Deserialize, Serialize};
 
 use crate::auth;
@@ -27,16 +27,21 @@ fn create_config_file(config: &Config) -> Result<(), Error> {
     Ok(())
 }
 
-fn get_config_path() -> Result<PathBuf, Error> {
-    let folder_name = if cfg!(debug_assertions) {
-        ".launcher-dev"
-    } else {
-        ".launcher"
-    };
+pub fn get_config_dir() -> Result<PathBuf, Error> {
+	let folder_name = if cfg!(debug_assertions) {
+		".glyph-launcher-dev"
+	} else {
+		".glyph-launcher"
+	};
 
-    home_dir()
-        .map(|path| path.join(folder_name).join("config.json"))
-        .ok_or_else(|| anyhow!("Failed to get home directory"))
+	config_dir()
+		.map(|path| path.join(folder_name))
+		.ok_or_else(|| anyhow!("Failed to get config directory"))
+}
+
+fn get_config_path() -> Result<PathBuf, Error> {
+    let config_dir = get_config_dir()?;
+	Ok(config_dir.join("config.json"))
 }
 
 pub fn config_file_exists() -> Result<bool, Error> {

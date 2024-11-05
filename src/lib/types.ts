@@ -7,6 +7,16 @@ export type LoginDetails = {
 	uri: string;
 }
 
+export type JavaDownloadPaths = string[];
+
+export type DownloadState = "none" | "downloading" | "done";
+
+export type ExtractState = "none" | "extracting" | "done";
+
+export type Progress = {
+	percentage: number;
+}
+
 export type Instance = {
 	game: {
 		modloader: {

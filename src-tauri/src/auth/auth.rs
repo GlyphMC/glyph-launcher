@@ -8,10 +8,10 @@ use log::info;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use tauri::{AppHandle, Emitter};
+use tauri::{AppHandle, Emitter, State};
 use tokio::time::sleep;
 
-use crate::{auth::account::Profile, config};
+use crate::{auth::account::Profile, config, AppState};
 
 use super::{
     account::Account,
@@ -29,21 +29,21 @@ struct LoginDetails<'a> {
     uri: &'a str,
 }
 
-pub async fn login(client: &Client, handle: AppHandle) -> Result<MinecraftProfileResponse, Error> {
-    let device_code_response = device_response(client).await?;
-    let device_response = device_code_response;
-	let login_details = LoginDetails {
-		code: &device_response.user_code,
-		uri: &device_response.verification_uri,
-	};
+pub async fn login(state: &State<'_, AppState>, handle: AppHandle) -> Result<MinecraftProfileResponse, Error> {
+    let client = state.client.lock().await;
 
-    handle
-        .emit("login-details", login_details)
-        .unwrap();
+    let device_code_response = device_response(&client).await?;
+    let device_response = device_code_response;
+    let login_details = LoginDetails {
+        code: &device_response.user_code,
+        uri: &device_response.verification_uri,
+    };
+
+    handle.emit("login-details", login_details).unwrap();
 
     let mut authentication_response: Option<AuthorizationTokenResponse> = None;
     while authentication_response.is_none() {
-        match authorization_token_response(&device_response.device_code, client).await {
+        match authorization_token_response(&device_response.device_code, &client).await {
             Result::Ok(token_response) => {
                 authentication_response = Some(token_response);
                 info!("Received authentication token");
@@ -56,17 +56,17 @@ pub async fn login(client: &Client, handle: AppHandle) -> Result<MinecraftProfil
     }
 
     let auth_response = authentication_response.unwrap();
-    let xbox_response = xbox_response(&auth_response.access_token, client).await?;
+    let xbox_response = xbox_response(&auth_response.access_token, &client).await?;
     let xbox_security_token_response =
-        xbox_security_token_response(xbox_response.token, client).await?;
+        xbox_security_token_response(xbox_response.token, &client).await?;
     let minecraft_response = minecraft_response(
         xbox_security_token_response.display_claims,
         xbox_security_token_response.token,
-        client,
+        &client,
     )
     .await?;
     let minecraft_profile_response =
-        minecraft_profile_response(minecraft_response.access_token, client).await?;
+        minecraft_profile_response(minecraft_response.access_token, &client).await?;
 
     let minecraft_profile_response_clone = minecraft_profile_response.clone();
 
@@ -102,6 +102,11 @@ pub async fn login(client: &Client, handle: AppHandle) -> Result<MinecraftProfil
 
 pub async fn refresh(client: &Client) -> Result<(), Error> {
     let config = config::get_config()?;
+    let default_account = Account::default();
+    if config.accounts.len() == 1 && config.accounts[0] == default_account {
+        info!("No accounts to refresh");
+        return Ok(());
+    }
     for account in config.accounts {
         let expiry = Duration::from_secs(account.expiry);
         let system_time = SystemTime::now().duration_since(UNIX_EPOCH)?;
@@ -123,30 +128,32 @@ pub async fn refresh(client: &Client) -> Result<(), Error> {
             let minecraft_profile_response =
                 minecraft_profile_response(minecraft_response.access_token, client).await?;
 
-			let expires_in = Duration::from_secs(refresh_token_response.expires_in.into());
-			let system_time = SystemTime::now().duration_since(UNIX_EPOCH)?;
-			let combined_duration = system_time + expires_in;
-			let combined_timestamp = combined_duration.as_secs();
+            let expires_in = Duration::from_secs(refresh_token_response.expires_in.into());
+            let system_time = SystemTime::now().duration_since(UNIX_EPOCH)?;
+            let combined_duration = system_time + expires_in;
+            let combined_timestamp = combined_duration.as_secs();
 
             let profile: Profile = minecraft_profile_response.clone().into();
 
-			let new_account = Account {
-				active: account.active,
-				expiry: combined_timestamp,
-				access_token: refresh_token_response.access_token,
-				refresh_token: account.refresh_token,
-				profile,
-			};
+            let new_account = Account {
+                active: account.active,
+                expiry: combined_timestamp,
+                access_token: refresh_token_response.access_token,
+                refresh_token: account.refresh_token,
+                profile,
+            };
 
-			let mut config = config::get_config().unwrap();
-			config.accounts.retain(|acc| acc.profile.id != new_account.profile.id);
-			config.accounts.push(new_account);
-			config::save_config(&config)?;
+            let mut config = config::get_config().unwrap();
+            config
+                .accounts
+                .retain(|acc| acc.profile.id != new_account.profile.id);
+            config.accounts.push(new_account);
+            config::save_config(&config)?;
 
-			info!("Token refreshed for account: {}", account.profile.name);
+            info!("Token refreshed for account: {}", account.profile.name);
         } else {
-			info!("Token for account: {} is still valid", account.profile.name);
-		}
+            info!("Token for account: {} is still valid", account.profile.name);
+        }
     }
 
     Ok(())
