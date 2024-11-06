@@ -68,10 +68,9 @@ async fn extract_java_archive(
     file_path: PathBuf,
 ) -> Result<(), Error> {
     let output_dir = file_path.with_extension("");
-    let total_size = file_path.metadata()?.len();
 
     if cfg!(windows) {
-        extract_zip(&handle, version, &file_path, &output_dir, total_size)?;
+        extract_zip(&handle, version, &file_path, &output_dir)?;
     }
 
     if cfg!(unix) {
@@ -86,9 +85,17 @@ fn extract_zip(
     version: &str,
     archive_path: &Path,
     output_dir: &Path,
-    total_size: u64,
 ) -> Result<(), Error> {
     info!("Extracting ZIP archive: {}", archive_path.to_string_lossy());
+
+	let file = File::open(archive_path)?;
+	let mut archive = ZipArchive::new(file)?;
+	let mut total_size = 0;
+
+	for i in 0..archive.len() {
+		let file = archive.by_index(i)?;
+		total_size += file.size();
+	}
 
     let file = File::open(archive_path)?;
     let mut archive = ZipArchive::new(file)?;
