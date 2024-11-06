@@ -1,9 +1,10 @@
 <script lang="ts">
-	import type { DownloadState, JavaDownloadPaths, Payload, Progress } from "$lib/types";
+	import type { ExtractState, DownloadState, JavaDownloadPaths, Payload, Progress } from "$lib/types";
 	import { invoke } from "@tauri-apps/api/core";
 	import { listen } from "@tauri-apps/api/event";
 	import { platform } from "@tauri-apps/plugin-os";
 	import { onMount } from "svelte";
+	import ProgressBars from "$lib/components/ProgressBars.svelte";
 
 	let windowWidth = $state(854);
 	let windowHeight = $state(480);
@@ -11,6 +12,7 @@
 	let isDiscreteGPU = $state(false);
 
 	let downloadState = $state<DownloadState>("none");
+	let extractState = $state<ExtractState>("none");
 	let paths = $state<string[]>([]);
 	let java8DownloadProgress = $state(0);
 	let java17DownloadProgress = $state(0);
@@ -23,11 +25,10 @@
 		let platformName = platform();
 		isLinux = platformName === "linux";
 		downloadState = "none";
+		extractState = "none";
 	});
 
 	async function downloadJava() {
-		console.log("Setting up Java automatically");
-
 		invoke<JavaDownloadPaths>("download_java").then((data) => {
 			paths = data;
 			console.log("Java downloaded successfully");
@@ -35,15 +36,25 @@
 	}
 
 	async function extractJava() {
-		console.log("Extracting Java");
-
-		invoke("extract_java", {  }).then(() => {
+		invoke("extract_java", { java8ArchivePath: paths[0], java17ArchivePath: paths[1], java21ArchivePath: paths[2] }).then(() => {
 			console.log("Java extracted successfully");
 		});
 	}
 
 	listen<Payload>("download-started", () => {
 		downloadState = "downloading";
+	});
+
+	listen<Payload>("download-finished", () => {
+		downloadState = "done";
+	});
+
+	listen<Payload>("extract-started", () => {
+		extractState = "extracting";
+	});
+
+	listen<Payload>("extract-finished", () => {
+		extractState = "done";
 	});
 
 	listen<Progress>("java-download-progress-8", (event) => {
@@ -57,39 +68,58 @@
 	listen<Progress>("java-download-progress-21", (event) => {
 		java21DownloadProgress = event.payload.percentage;
 	});
+
+	listen<Progress>("java-extract-progress-8", (event) => {
+		java8ExtractProgress = event.payload.percentage;
+	});
+
+	listen<Progress>("java-extract-progress-17", (event) => {
+		java17ExtractProgress = event.payload.percentage;
+	});
+
+	listen<Progress>("java-extract-progress-21", (event) => {
+		java21ExtractProgress = event.payload.percentage;
+	});
 </script>
 
-{#snippet ProgressBar(percentage: number)}
-	<div class="h-3 rounded-full bg-zinc-200">
-		<div class="h-full rounded-full bg-green-600" style="width: {percentage}%"></div>
-	</div>
-{/snippet}
-
-{#if downloadState !== "none"}
+{#if downloadState !== "none" || extractState !== "none"}
 	<div class="fixed inset-0 z-50 flex items-center justify-center bg-zinc-900 bg-opacity-50 font-display backdrop-blur-md">
 		<div class="relative w-full max-w-sm rounded-lg bg-zinc-700 p-6 text-center shadow-lg">
 			<h2 class="text-xl font-bold text-zinc-50">Java Automatic Setup</h2>
 			{#if downloadState === "downloading"}
 				<p class="text-lg text-zinc-50">Downloading:</p>
+			{:else if downloadState === "done"}
+				<p class="text-lg text-zinc-50">Finished downloading. Ready to extract</p>
+			{:else if extractState === "extracting"}
+				<p class="text-lg text-zinc-50">Extracting:</p>
+			{:else if extractState === "done"}
+				<p class="text-lg text-zinc-50">Finished extracting.</p>
 			{/if}
-			<div class="flex items-center">
-				<p class="mr-4 text-zinc-50">Java 8</p>
-				<div class="flex-1">
-					{@render ProgressBar(java8DownloadProgress)}
-				</div>
-			</div>
-			<div class="flex items-center">
-				<p class="mr-4 text-zinc-50">Java 17</p>
-				<div class="flex-1">
-					{@render ProgressBar(java17DownloadProgress)}
-				</div>
-			</div>
-			<div class="flex items-center">
-				<p class="mr-4 text-zinc-50">Java 21</p>
-				<div class="flex-1">
-					{@render ProgressBar(java21DownloadProgress)}
-				</div>
-			</div>
+
+			{#if downloadState === "downloading" || downloadState === "done"}
+				<ProgressBars java8Progress={java8DownloadProgress} java17Progress={java17DownloadProgress} java21Progress={java21DownloadProgress} />
+				<button
+					onclick={() => {
+						extractJava();
+						downloadState = "none";
+						extractState = "extracting";
+					}}
+					class="mt-4 rounded-md bg-green-600 px-8 py-1.5 font-bold text-zinc-50 transition duration-75 ease-in-out hover:bg-green-700 active:scale-105 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-green-600"
+					disabled={downloadState === "downloading"}>
+					Extract
+				</button>
+			{:else if extractState === "extracting" || extractState === "done"}
+				<ProgressBars java8Progress={java8ExtractProgress} java17Progress={java17ExtractProgress} java21Progress={java21ExtractProgress} />
+				<button
+					onclick={() => {
+						downloadState = "none";
+						extractState = "none";
+					}}
+					class="mt-4 rounded-md bg-green-600 px-8 py-1.5 font-bold text-zinc-50 transition duration-75 ease-in-out hover:bg-green-700 active:scale-105 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-green-600"
+					disabled={extractState === "extracting"}>
+					Done
+				</button>
+			{/if}
 		</div>
 	</div>
 {/if}
@@ -138,7 +168,7 @@
 		<div class="mt-4">
 			<button
 				onclick={downloadJava}
-				class="rounded bg-green-600 px-4 py-2 font-bold text-zinc-50 transition duration-75 ease-in-out active:scale-105">
+				class="rounded bg-green-600 px-4 py-2 font-bold text-zinc-50 transition duration-75 ease-in-out active:scale-105 hover:bg-green-700">
 				Set up Java automatically
 			</button>
 		</div>

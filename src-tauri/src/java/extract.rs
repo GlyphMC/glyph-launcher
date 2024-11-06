@@ -11,7 +11,7 @@ use tar::Archive;
 use tauri::{async_runtime::spawn, AppHandle, Emitter};
 use zip::ZipArchive;
 
-use crate::java::structs::Progress;
+use crate::{java::structs::Progress, Payload};
 
 pub async fn extract_java(
     handle: AppHandle,
@@ -19,6 +19,15 @@ pub async fn extract_java(
     java_17_archive_path: PathBuf,
     java_21_archive_path: PathBuf,
 ) -> Result<(), Error> {
+    handle
+        .emit(
+            "extract-started",
+            Payload {
+                message: "Extract started",
+            },
+        )
+        .unwrap();
+
     let handle_8 = {
         let handle = handle.clone();
         let java_8_path = java_8_archive_path.clone();
@@ -32,6 +41,7 @@ pub async fn extract_java(
     };
 
     let handle_21 = {
+        let handle = handle.clone();
         let java_21_path = java_21_archive_path;
         spawn(async move { extract_java_archive(handle, "21", java_21_path).await })
     };
@@ -39,6 +49,15 @@ pub async fn extract_java(
     handle_8.await??;
     handle_17.await??;
     handle_21.await??;
+
+    handle
+        .emit(
+            "extract-finished",
+            Payload {
+                message: "Extract finished",
+            },
+        )
+        .unwrap();
 
     Ok(())
 }
@@ -56,7 +75,7 @@ async fn extract_java_archive(
     }
 
     if cfg!(unix) {
-        extract_tar_gz(&handle, version, &file_path, &output_dir, total_size)?;
+        extract_tar_gz(&handle, version, &file_path, &output_dir)?;
     }
 
     Ok(())
@@ -114,12 +133,22 @@ fn extract_tar_gz(
     version: &str,
     archive_path: &Path,
     output_dir: &Path,
-    total_size: u64,
 ) -> Result<(), Error> {
     info!(
         "Extracting TAR.GZ archive: {}",
         archive_path.to_string_lossy()
     );
+
+    let file = File::open(archive_path)?;
+    let buf_reader = BufReader::new(file);
+    let decompressed = GzDecoder::new(buf_reader);
+    let mut archive = Archive::new(decompressed);
+
+    let mut total_size = 0;
+    for entry in archive.entries()? {
+        let entry = entry?;
+        total_size += entry.header().size()?;
+    }
 
     let file = File::open(archive_path)?;
     let buf_reader = BufReader::new(file);
