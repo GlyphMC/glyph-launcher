@@ -4,7 +4,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use anyhow::{Error, Result};
+use anyhow::{anyhow, Error, Ok, Result};
 use flate2::bufread::GzDecoder;
 use log::info;
 use tar::Archive;
@@ -15,10 +15,10 @@ use crate::{java::structs::Progress, Payload};
 
 pub async fn extract_java(
     handle: AppHandle,
-    java_8_archive_path: PathBuf,
-    java_17_archive_path: PathBuf,
-    java_21_archive_path: PathBuf,
-) -> Result<(), Error> {
+    paths: (PathBuf, PathBuf, PathBuf),
+) -> Result<(PathBuf, PathBuf, PathBuf), Error> {
+    let (java_8_archive_path, java_17_archive_path, java_21_archive_path) = paths;
+
     handle
         .emit(
             "extract-started",
@@ -31,24 +31,33 @@ pub async fn extract_java(
     let handle_8 = {
         let handle = handle.clone();
         let java_8_path = java_8_archive_path.clone();
-        spawn(async move { extract_java_archive(handle, "8", java_8_path).await })
+        spawn(async move {
+            let output_dir_8 = extract_java_archive(handle, "8", java_8_path).await?;
+            Ok(output_dir_8)
+        })
     };
 
     let handle_17 = {
         let handle = handle.clone();
         let java_17_path = java_17_archive_path.clone();
-        spawn(async move { extract_java_archive(handle, "17", java_17_path).await })
+        spawn(async move {
+            let output_dir_17 = extract_java_archive(handle, "17", java_17_path).await?;
+            Ok(output_dir_17)
+        })
     };
 
     let handle_21 = {
         let handle = handle.clone();
-        let java_21_path = java_21_archive_path;
-        spawn(async move { extract_java_archive(handle, "21", java_21_path).await })
+        let java_21_path = java_21_archive_path.clone();
+        spawn(async move {
+            let output_dir_21 = extract_java_archive(handle, "21", java_21_path).await?;
+            Ok(output_dir_21)
+        })
     };
 
-    handle_8.await??;
-    handle_17.await??;
-    handle_21.await??;
+    let output_dir_8 = handle_8.await??;
+    let output_dir_17 = handle_17.await??;
+    let output_dir_21 = handle_21.await??;
 
     handle
         .emit(
@@ -59,25 +68,25 @@ pub async fn extract_java(
         )
         .unwrap();
 
-    Ok(())
+    Ok((output_dir_8, output_dir_17, output_dir_21))
 }
 
 async fn extract_java_archive(
     handle: AppHandle,
     version: &str,
     file_path: PathBuf,
-) -> Result<(), Error> {
+) -> Result<PathBuf, Error> {
     let output_dir = file_path.with_extension("");
 
-    if cfg!(windows) {
-        extract_zip(&handle, version, &file_path, &output_dir)?;
-    }
+    let extract_dir = if cfg!(windows) {
+        extract_zip(&handle, version, &file_path, &output_dir)?
+    } else if cfg!(unix) {
+        extract_tar_gz(&handle, version, &file_path, &output_dir)?
+    } else {
+        return Err(anyhow!("Unsupported platform").into());
+    };
 
-    if cfg!(unix) {
-        extract_tar_gz(&handle, version, &file_path, &output_dir)?;
-    }
-
-    Ok(())
+    Ok(extract_dir)
 }
 
 fn extract_zip(
@@ -85,17 +94,17 @@ fn extract_zip(
     version: &str,
     archive_path: &Path,
     output_dir: &Path,
-) -> Result<(), Error> {
+) -> Result<PathBuf, Error> {
     info!("Extracting ZIP archive: {}", archive_path.to_string_lossy());
 
-	let file = File::open(archive_path)?;
-	let mut archive = ZipArchive::new(file)?;
-	let mut total_size = 0;
+    let file = File::open(archive_path)?;
+    let mut archive = ZipArchive::new(file)?;
+    let mut total_size = 0;
 
-	for i in 0..archive.len() {
-		let file = archive.by_index(i)?;
-		total_size += file.size();
-	}
+    for i in 0..archive.len() {
+        let file = archive.by_index(i)?;
+        total_size += file.size();
+    }
 
     let file = File::open(archive_path)?;
     let mut archive = ZipArchive::new(file)?;
@@ -132,7 +141,7 @@ fn extract_zip(
 
     info!("Extracted ZIP archive to: {}", output_dir.to_string_lossy());
 
-    Ok(())
+    Ok(output_dir.to_path_buf())
 }
 
 fn extract_tar_gz(
@@ -140,7 +149,7 @@ fn extract_tar_gz(
     version: &str,
     archive_path: &Path,
     output_dir: &Path,
-) -> Result<(), Error> {
+) -> Result<PathBuf, Error> {
     info!(
         "Extracting TAR.GZ archive: {}",
         archive_path.to_string_lossy()
@@ -197,5 +206,5 @@ fn extract_tar_gz(
         final_output_dir.to_string_lossy()
     );
 
-    Ok(())
+    Ok(final_output_dir.to_path_buf())
 }

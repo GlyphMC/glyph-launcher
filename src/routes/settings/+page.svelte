@@ -4,7 +4,7 @@
 	import { platform } from "@tauri-apps/plugin-os";
 	import { onMount } from "svelte";
 	import ProgressBars from "$lib/components/ProgressBars.svelte";
-	import type { ExtractState, DownloadState, JavaDownloadPaths, ProgressEvent, JavaProgress } from "$lib/types";
+	import type { ExtractState, DownloadState, JavaPaths, ProgressEvent, JavaProgress } from "$lib/types";
 
 	let windowWidth = $state(854);
 	let windowHeight = $state(480);
@@ -31,15 +31,23 @@
 	}
 
 	async function downloadJava() {
-		invoke<JavaDownloadPaths>("download_java").then((data) => {
+		invoke<JavaPaths>("download_java").then((data) => {
 			paths = data;
 			console.log("Java downloaded successfully");
 		});
 	}
 
 	async function extractJava() {
-		invoke("extract_java", { paths }).then(() => {
+		invoke<JavaPaths>("extract_java", { paths }).then((data) => {
+			console.log(data);
+			paths = data;
 			console.log("Java extracted successfully");
+		});
+	}
+
+	async function saveJavaToConfig() {
+		invoke("save_java_to_config", { paths }).then(() => {
+			console.log("Java saved to config successfully");
 		});
 	}
 
@@ -98,6 +106,7 @@
 				<button
 					onclick={() => {
 						resetStates();
+						saveJavaToConfig();
 					}}
 					class="mt-4 rounded-md bg-green-600 px-8 py-1.5 font-bold text-zinc-50 transition duration-75 ease-in-out hover:bg-green-700 active:scale-105 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-green-600"
 					disabled={extractState === "extracting"}>

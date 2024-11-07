@@ -64,6 +64,7 @@ pub fn run() {
             commands::get_minecraft_profiles,
 			commands::download_java,
 			commands::extract_java,
+			commands::save_java_to_config,
         ])
         .run(tauri::generate_context!())
         .expect("Error while running Tauri Application");

@@ -4,13 +4,14 @@ use anyhow::{anyhow, Error, Result};
 use dirs::config_dir;
 use serde::{Deserialize, Serialize};
 
-use crate::auth;
+use crate::{auth, java::structs::JavaConfig};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct Config {
     pub accounts: Vec<auth::account::Account>,
     pub rich_presence: bool,
+	pub java: JavaConfig,
 }
 
 fn create_config_file(config: &Config) -> Result<(), Error> {
@@ -55,6 +56,7 @@ pub fn create_default_config_file() -> Result<(), Error> {
     let default_config = Config {
         accounts: vec![default_account],
         rich_presence: true,
+		java: JavaConfig::default(),
     };
 
     create_config_file(&default_config)

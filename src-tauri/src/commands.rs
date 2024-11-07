@@ -40,8 +40,12 @@ pub async fn download_java(state: State<'_, AppState>, handle: AppHandle) -> Res
 pub async fn extract_java(
 	handle: AppHandle,
 	paths: (PathBuf, PathBuf, PathBuf),
-) -> Result<(), ()> {
-	let (java_8_archive_path, java_17_archive_path, java_21_archive_path) = paths;
-	java::extract::extract_java(handle, java_8_archive_path, java_17_archive_path, java_21_archive_path).await.unwrap();
-	Ok(())
+) -> Result<(PathBuf, PathBuf, PathBuf), ()> {
+	let paths = java::extract::extract_java(handle, paths).await.unwrap();
+	Ok((paths.0, paths.1, paths.2))
+}
+
+#[tauri::command]
+pub async fn save_java_to_config(paths: (PathBuf, PathBuf, PathBuf)) {
+	java::config::save_java_to_config(paths).unwrap();
 }

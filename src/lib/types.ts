@@ -7,7 +7,7 @@ export type LoginDetailsEvent = {
 	uri: string;
 };
 
-export type JavaDownloadPaths = string[];
+export type JavaPaths = string[];
 
 export type DownloadState = "none" | "downloading" | "done";
 

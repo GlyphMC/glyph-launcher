@@ -14,7 +14,7 @@
 
 	async function maximizeWindow() {
 		let window = getCurrentWindow();
-		maximized = await window.isMaximized()
+		maximized = await window.isMaximized();
 		if (maximized) {
 			await window.unmaximize();
 		} else {
@@ -28,13 +28,13 @@
 	}
 </script>
 
-{#snippet titlebarButton(IconComponent: any, action: () => void)}
-	<button class="text-zinc-100 duration-150 hover:text-zinc-50" onclick={action}>
+{#snippet titlebarButton(IconComponent: any, onclick: () => void)}
+	<button class="text-zinc-100 duration-150 hover:text-zinc-50" {onclick}>
 		<IconComponent class="h-5 w-5" />
 	</button>
 {/snippet}
 
-<div class="fixed right-4 top-0 flex w-full justify-end gap-4 py-2 z-50" data-tauri-drag-region>
+<div class="fixed right-4 top-0 z-50 flex w-full justify-end gap-4 py-2" data-tauri-drag-region>
 	{@render titlebarButton(Minus, async () => await minimizeWindow())}
 	{#if maximized}
 		{@render titlebarButton(ChevronDown, async () => await maximizeWindow())}
