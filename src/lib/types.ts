@@ -1,11 +1,11 @@
 export type Payload = {
 	message: string;
-}
+};
 
-export type LoginDetails = {
+export type LoginDetailsEvent = {
 	code: string;
 	uri: string;
-}
+};
 
 export type JavaDownloadPaths = string[];
 
@@ -13,9 +13,14 @@ export type DownloadState = "none" | "downloading" | "done";
 
 export type ExtractState = "none" | "extracting" | "done";
 
-export type Progress = {
+export type JavaProgress = {
+	download: { [key: number]: number };
+	extract: { [key: number]: number };
+};
+
+export type ProgressEvent = {
 	percentage: number;
-}
+};
 
 export type Instance = {
 	game: {
@@ -31,7 +36,7 @@ export type Instance = {
 	};
 	name: string;
 	slug: string;
-}
+};
 
 export type MinecraftProfile = {
 	id: string;
@@ -52,4 +57,4 @@ export type MinecraftProfile = {
 			alias: string;
 		}
 	];
-}
+};

@@ -39,10 +39,9 @@ pub async fn download_java(state: State<'_, AppState>, handle: AppHandle) -> Res
 #[tauri::command]
 pub async fn extract_java(
 	handle: AppHandle,
-	java_8_archive_path: PathBuf,
-	java_17_archive_path: PathBuf,
-	java_21_archive_path: PathBuf,
+	paths: (PathBuf, PathBuf, PathBuf),
 ) -> Result<(), ()> {
+	let (java_8_archive_path, java_17_archive_path, java_21_archive_path) = paths;
 	java::extract::extract_java(handle, java_8_archive_path, java_17_archive_path, java_21_archive_path).await.unwrap();
 	Ok(())
 }

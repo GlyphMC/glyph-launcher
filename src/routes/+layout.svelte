@@ -1,6 +1,6 @@
 <script lang="ts">
-	import Sidebar from "$lib/Sidebar.svelte";
-	import Titlebar from "$lib/Titlebar.svelte";
+	import Sidebar from "$lib/ui/Sidebar.svelte";
+	import Titlebar from "$lib/ui/Titlebar.svelte";
 	import "../app.css";
 
 	let { children } = $props();

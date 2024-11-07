@@ -4,7 +4,7 @@
 	import { listen } from "@tauri-apps/api/event";
 	import { writeText } from "@tauri-apps/plugin-clipboard-manager";
 	import { open } from "@tauri-apps/plugin-shell";
-	import type { Instance, LoginDetails, MinecraftProfile } from "./types";
+	import type { Instance, LoginDetailsEvent, MinecraftProfile } from "../types";
 
 	let instances = $state<Instance[]>([]);
 	let profiles = $state<MinecraftProfile[]>([]);
@@ -33,7 +33,7 @@
 			.finally(() => (showPopUp = false));
 	}
 
-	listen<LoginDetails>("login-details", (event) => {
+	listen<LoginDetailsEvent>("login-details", (event) => {
 		loginCode = event.payload.code;
 		verificationUri = event.payload.uri;
 		showPopUp = true;
