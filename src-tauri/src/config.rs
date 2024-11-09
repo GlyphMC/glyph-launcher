@@ -4,14 +4,17 @@ use anyhow::{anyhow, Error, Result};
 use dirs::config_dir;
 use serde::{Deserialize, Serialize};
 
-use crate::{auth, java::structs::JavaConfig};
+use crate::{
+    auth::{self, account::Account},
+    java::structs::JavaConfig,
+};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct Config {
-    pub accounts: Vec<auth::account::Account>,
+    pub accounts: Vec<Account>,
     pub rich_presence: bool,
-	pub java: JavaConfig,
+    pub java: JavaConfig,
 }
 
 fn create_config_file(config: &Config) -> Result<(), Error> {
@@ -29,20 +32,20 @@ fn create_config_file(config: &Config) -> Result<(), Error> {
 }
 
 pub fn get_config_dir() -> Result<PathBuf, Error> {
-	let folder_name = if cfg!(debug_assertions) {
-		".glyph-launcher-dev"
-	} else {
-		".glyph-launcher"
-	};
+    let folder_name = if cfg!(debug_assertions) {
+        ".glyph-launcher-dev"
+    } else {
+        ".glyph-launcher"
+    };
 
-	config_dir()
-		.map(|path| path.join(folder_name))
-		.ok_or_else(|| anyhow!("Failed to get config directory"))
+    config_dir()
+        .map(|path| path.join(folder_name))
+        .ok_or_else(|| anyhow!("Failed to get config directory"))
 }
 
 fn get_config_path() -> Result<PathBuf, Error> {
     let config_dir = get_config_dir()?;
-	Ok(config_dir.join("config.json"))
+    Ok(config_dir.join("config.json"))
 }
 
 pub fn config_file_exists() -> Result<bool, Error> {
@@ -56,7 +59,7 @@ pub fn create_default_config_file() -> Result<(), Error> {
     let default_config = Config {
         accounts: vec![default_account],
         rich_presence: true,
-		java: JavaConfig::default(),
+        java: JavaConfig::default(),
     };
 
     create_config_file(&default_config)
