@@ -89,6 +89,7 @@ async fn download_java_version(
         ("archive_type", archive_type),
         ("java_package_type", "jdk"),
         ("javafx_bundled", "false"),
+		("crac_supported", "false"),
         ("latest", "true"),
         ("release_status", "ga"),
     ];

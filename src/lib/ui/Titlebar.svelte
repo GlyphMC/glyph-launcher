@@ -34,7 +34,7 @@
 	</button>
 {/snippet}
 
-<div class="fixed right-4 top-0 z-50 flex w-full justify-end gap-4 py-2" data-tauri-drag-region>
+<div class="fixed right-4 top-0 z-40 flex w-full justify-end gap-4 py-2" data-tauri-drag-region>
 	{@render titlebarButton(Minus, async () => await minimizeWindow())}
 	{#if maximized}
 		{@render titlebarButton(ChevronDown, async () => await maximizeWindow())}

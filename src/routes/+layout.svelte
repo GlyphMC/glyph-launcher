@@ -1,14 +1,19 @@
 <script lang="ts">
-	import Sidebar from "$lib/ui/Sidebar.svelte";
+	import * as Sidebar from "$lib/components/ui/sidebar/index";
+	import AppSidebar from "$lib/ui/Sidebar.svelte";
 	import Titlebar from "$lib/ui/Titlebar.svelte";
-	import "../app.css";
+	import { ModeWatcher } from "mode-watcher";
+	import "../app.pcss";
 
 	let { children } = $props();
 </script>
 
-<Sidebar />
-
-<section class="ml-80 pb-12">
-	<Titlebar />
+<ModeWatcher />
+<Sidebar.Provider open={true} class="bg-background">
+	<AppSidebar />
+	<Sidebar.Trigger class="z-50 flex h-12 items-center justify-between px-4 hover:bg-transparent" />
 	{@render children()}
-</section>
+	<section class="pb-12">
+		<Titlebar />
+	</section>
+</Sidebar.Provider>

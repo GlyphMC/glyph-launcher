@@ -1,53 +1,94 @@
 import type { Config } from "tailwindcss";
-import tailwindcssMotion from "tailwindcss-motion";
+import tailwindcssAnimate from "tailwindcss-animate";
 
 export default {
+	darkMode: ["class"],
 	content: ["./src/**/*.{html,js,svelte,ts}"],
-
+	safelist: ["dark"],
 	theme: {
-		extend: {},
-		fontFamily: {
-			display: ["Inter", "sans-serif"],
-			mono: ["JetBrains Mono", "monospace"]
+		container: {
+			center: true,
+			padding: "2rem",
+			screens: {
+				"2xl": "1400px"
+			}
 		},
-		colors: {
-			zinc: {
-				50: "#f3f3f3",
-				100: "#b6b6b6",
-				200: "#7f7d82",
-				300: "#363438",
-				400: "#252427",
-				500: "#1e1e20",
-				600: "#1a1a1c",
-				700: "#141415",
-				800: "#121213",
-				900: "#0c0c0d"
+		extend: {
+			colors: {
+				border: "hsl(var(--border) / <alpha-value>)",
+				input: "hsl(var(--input) / <alpha-value>)",
+				ring: "hsl(var(--ring) / <alpha-value>)",
+				background: "hsl(var(--background) / <alpha-value>)",
+				foreground: "hsl(var(--foreground) / <alpha-value>)",
+				primary: {
+					DEFAULT: "hsl(var(--primary) / <alpha-value>)",
+					foreground: "hsl(var(--primary-foreground) / <alpha-value>)"
+				},
+				secondary: {
+					DEFAULT: "hsl(var(--secondary) / <alpha-value>)",
+					foreground: "hsl(var(--secondary-foreground) / <alpha-value>)"
+				},
+				destructive: {
+					DEFAULT: "hsl(var(--destructive) / <alpha-value>)",
+					foreground: "hsl(var(--destructive-foreground) / <alpha-value>)"
+				},
+				muted: {
+					DEFAULT: "hsl(var(--muted) / <alpha-value>)",
+					foreground: "hsl(var(--muted-foreground) / <alpha-value>)"
+				},
+				accent: {
+					DEFAULT: "hsl(var(--accent) / <alpha-value>)",
+					foreground: "hsl(var(--accent-foreground) / <alpha-value>)"
+				},
+				popover: {
+					DEFAULT: "hsl(var(--popover) / <alpha-value>)",
+					foreground: "hsl(var(--popover-foreground) / <alpha-value>)"
+				},
+				card: {
+					DEFAULT: "hsl(var(--card) / <alpha-value>)",
+					foreground: "hsl(var(--card-foreground) / <alpha-value>)"
+				},
+				sidebar: {
+					"DEFAULT": "hsl(var(--sidebar-background))",
+					"foreground": "hsl(var(--sidebar-foreground))",
+					"primary": "hsl(var(--sidebar-primary))",
+					"primary-foreground": "hsl(var(--sidebar-primary-foreground))",
+					"accent": "hsl(var(--sidebar-accent))",
+					"accent-foreground": "hsl(var(--sidebar-accent-foreground))",
+					"border": "hsl(var(--sidebar-border))",
+					"ring": "hsl(var(--sidebar-ring))"
+				}
 			},
-			red: {
-				50: "#fcefed",
-				100: "#f8dbd6",
-				200: "#f1bbb2",
-				300: "#eba091",
-				400: "#e2675d",
-				500: "#d64237",
-				600: "#a52a21",
-				700: "#7d1e17",
-				800: "#4d120e",
-				900: "#360d09"
+			borderRadius: {
+				xl: "calc(var(--radius) + 4px)",
+				lg: "var(--radius)",
+				md: "calc(var(--radius) - 2px)",
+				sm: "calc(var(--radius) - 4px)"
 			},
-			green: {
-				50: "#f0fdf4",
-				100: "#dcfce7",
-				200: "#bbf7d0",
-				300: "#86efac",
-				400: "#4ade80",
-				500: "#22c55e",
-				600: "#16a34a",
-				700: "#15803d",
-				800: "#166534",
-				900: "#14532d"
+			fontFamily: {
+				display: ["Inter", "sans-serif"],
+				mono: ["JetBrains Mono", "monospace"]
+			},
+			keyframes: {
+				"accordion-down": {
+					from: { height: "0" },
+					to: { height: "var(--bits-accordion-content-height)" }
+				},
+				"accordion-up": {
+					from: { height: "var(--bits-accordion-content-height)" },
+					to: { height: "0" }
+				},
+				"caret-blink": {
+					"0%,70%,100%": { opacity: "1" },
+					"20%,50%": { opacity: "0" }
+				}
+			},
+			animation: {
+				"accordion-down": "accordion-down 0.2s ease-out",
+				"accordion-up": "accordion-up 0.2s ease-out",
+				"caret-blink": "caret-blink 1.25s ease-out infinite"
 			}
 		}
 	},
-	plugins: [tailwindcssMotion]
+	plugins: [tailwindcssAnimate]
 } as Config;

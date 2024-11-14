@@ -4,12 +4,20 @@
 	import { platform } from "@tauri-apps/plugin-os";
 	import { onMount } from "svelte";
 	import ProgressBars from "$lib/components/ProgressBars.svelte";
+	import { Checkbox } from "$lib/components/ui/checkbox/index";
+	import { Label } from "$lib/components/ui/label/index";
+	import { Input } from "$lib/components/ui/input/index";
 	import type { ExtractState, DownloadState, JavaPaths, ProgressEvent, JavaProgress } from "$lib/types";
+	import { Button, buttonVariants } from "$lib/components/ui/button/index";
+	import { resetMode, setMode } from "mode-watcher";
+	import * as Card from "$lib/components/ui/card/index";
+	import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index";
 
+	let startMaximized = $state(false);
 	let windowWidth = $state(854);
 	let windowHeight = $state(480);
 	let isLinux = $state(false);
-	let isDiscreteGPU = $state(false);
+	let useDiscreteGPU = $state(false);
 
 	let downloadState = $state<DownloadState>("none");
 	let extractState = $state<ExtractState>("none");
@@ -66,91 +74,105 @@
 		setProgressListener("java-download", "download", version);
 		setProgressListener("java-extract", "extract", version);
 	});
-	//TODO: tailwind motion
 </script>
 
 {#if downloadState !== "none" || extractState !== "none"}
 	<div class="fixed inset-0 z-50 flex items-center justify-center bg-zinc-900 bg-opacity-50 font-display backdrop-blur-md">
-		<div class="relative w-full max-w-sm rounded-lg bg-zinc-700 p-6 text-center shadow-lg">
-			<h2 class="text-xl font-bold text-zinc-50">Java Automatic Setup</h2>
-			{#if downloadState === "downloading"}
-				<p class="text-lg text-zinc-50">Downloading:</p>
-			{:else if downloadState === "done"}
-				<p class="text-lg text-zinc-50">Finished downloading. Ready to extract</p>
-			{:else if extractState === "extracting"}
-				<p class="text-lg text-zinc-50">Extracting:</p>
-			{:else if extractState === "done"}
-				<p class="text-lg text-zinc-50">Finished extracting.</p>
-			{/if}
+		<Card.Root class="relative w-full max-w-sm rounded-lg bg-zinc-900 p-2 text-center shadow-lg">
+			<Card.Header>
+				<h2 class="text-xl font-bold text-zinc-50">Java Automatic Setup</h2>
+				{#if downloadState === "downloading"}
+					<p class="text-sm text-zinc-50">Downloading:</p>
+				{:else if downloadState === "done"}
+					<p class="text-sm text-zinc-50">Finished downloading. Ready to extract</p>
+				{:else if extractState === "extracting"}
+					<p class="text-sm text-zinc-50">Extracting:</p>
+				{:else if extractState === "done"}
+					<p class="text-sm text-zinc-50">Finished extracting.</p>
+				{/if}
+			</Card.Header>
 
-			{#if downloadState === "downloading" || downloadState === "done"}
-				<ProgressBars
-					java8Progress={javaProgress.download[8]}
-					java17Progress={javaProgress.download[17]}
-					java21Progress={javaProgress.download[21]} />
-				<button
-					onclick={() => {
-						extractJava();
-						downloadState = "none";
-						extractState = "extracting";
-					}}
-					class="mt-4 rounded-md bg-green-600 px-8 py-1.5 font-bold text-zinc-50 transition duration-75 ease-in-out hover:bg-green-700 active:scale-105 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-green-600"
-					disabled={downloadState === "downloading"}>
-					Extract
-				</button>
-			{:else if extractState === "extracting" || extractState === "done"}
-				<ProgressBars
-					java8Progress={javaProgress.extract[8]}
-					java17Progress={javaProgress.extract[17]}
-					java21Progress={javaProgress.extract[21]} />
-				<button
-					onclick={() => {
-						resetStates();
-						saveJavaToConfig();
-					}}
-					class="mt-4 rounded-md bg-green-600 px-8 py-1.5 font-bold text-zinc-50 transition duration-75 ease-in-out hover:bg-green-700 active:scale-105 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-green-600"
-					disabled={extractState === "extracting"}>
-					Done
-				</button>
-			{/if}
-		</div>
+			<Card.Content>
+				{#if downloadState === "downloading" || downloadState === "done"}
+					<ProgressBars
+						java8Progress={javaProgress.download[8]}
+						java17Progress={javaProgress.download[17]}
+						java21Progress={javaProgress.download[21]} />
+				{:else if extractState === "extracting" || extractState === "done"}
+					<ProgressBars
+						java8Progress={javaProgress.extract[8]}
+						java17Progress={javaProgress.extract[17]}
+						java21Progress={javaProgress.extract[21]} />
+				{/if}
+			</Card.Content>
+
+			<Card.Footer class="flex justify-center">
+				{#if downloadState === "downloading" || downloadState === "done"}
+					<Button
+						onclick={() => {
+							extractJava();
+							downloadState = "none";
+							extractState = "extracting";
+						}}
+						variant="outline"
+						disabled={downloadState === "downloading"}>
+						Extract
+					</Button>
+				{:else if extractState === "extracting" || extractState === "done"}
+					<Button
+						onclick={() => {
+							resetStates();
+							saveJavaToConfig();
+						}}
+						variant="outline"
+						disabled={extractState === "extracting"}>
+						Done
+					</Button>
+				{/if}
+			</Card.Footer>
+		</Card.Root>
 	</div>
 {/if}
 
-<div class="overflow-hidden bg-zinc-400 font-display">
+<div class="overflow-hidden font-display w-full">
 	<p class="px-10 pt-10 text-3xl font-bold text-zinc-50">Settings</p>
+
+	<div class="px-10 py-5">
+		<h2 class="mb-4 text-2xl font-semibold text-zinc-50">General</h2>
+		<DropdownMenu.Root>
+			<DropdownMenu.Trigger class={buttonVariants({ variant: "outline", size: "default" })}>Theme</DropdownMenu.Trigger>
+			<DropdownMenu.Content align="end">
+				<DropdownMenu.Item onclick={() => setMode("light")}>Light</DropdownMenu.Item>
+				<DropdownMenu.Item onclick={() => setMode("dark")}>Dark</DropdownMenu.Item>
+				<DropdownMenu.Item onclick={() => resetMode()}>System</DropdownMenu.Item>
+			</DropdownMenu.Content>
+		</DropdownMenu.Root>
+	</div>
 
 	<div class="px-10 py-5">
 		<h2 class="text-2xl font-semibold text-zinc-50">Minecraft</h2>
 		<div class="mt-4">
-			<label class="inline-flex items-center">
-				<input type="checkbox" class="form-checkbox text-zinc-600" />
-				<span class="ml-2 text-zinc-50">Start maximized</span>
-			</label>
-			<div class="mt-4">
-				<label for="window-width" class="block text-zinc-50">Window Width</label>
-				<input
-					id="window-width"
-					type="number"
-					class="form-input mt-1 block w-full text-zinc-900"
-					placeholder="Enter width"
-					bind:value={windowWidth} />
+			<div class="inline-flex items-center">
+				<Checkbox bind:checked={startMaximized} />
+				<Label class="ml-2 text-zinc-50">Start maximised</Label>
 			</div>
-			<div class="mt-4">
-				<label for="window-height" class="block text-zinc-50">Window Height</label>
-				<input
-					id="window-height"
-					type="number"
-					class="form-input mt-1 block w-full text-zinc-900"
-					placeholder="Enter height"
-					bind:value={windowHeight} />
+
+			<div class="mt-4 flex space-x-4">
+				<div>
+					<Label class="mb-2 block text-zinc-50">Window Width</Label>
+					<Input type="number" bind:value={windowWidth} />
+				</div>
+				<div>
+					<Label class="mb-2 block text-zinc-50">Window Height</Label>
+					<Input type="number" bind:value={windowHeight} />
+				</div>
 			</div>
 			{#if isLinux}
 				<div class="mt-4">
-					<label class="inline-flex items-center">
-						<input type="checkbox" class="form-checkbox text-zinc-600" />
-						<span class="ml-2 text-zinc-50">Use discrete GPU</span>
-					</label>
+					<div class="inline-flex items-center">
+						<Checkbox bind:checked={useDiscreteGPU} />
+						<Label class="ml-2 text-zinc-50">Use discrete GPU</Label>
+					</div>
 				</div>
 			{/if}
 		</div>
@@ -158,12 +180,15 @@
 
 	<div class="px-10 py-5">
 		<h2 class="text-2xl font-semibold text-zinc-50">Java</h2>
-		<div class="mt-4">
-			<button
-				onclick={downloadJava}
-				class="rounded bg-green-600 px-4 py-2 font-bold text-zinc-50 transition duration-75 ease-in-out hover:bg-green-700 active:scale-105">
-				Set up Java automatically
-			</button>
+		<div class="mt-4 flex space-x-4">
+			<Button onclick={downloadJava}>Set up Java automatically</Button>
+			<Button
+				onclick={() => {
+					resetStates();
+				}}
+				variant="destructive">
+				Set up Java manually
+			</Button>
 		</div>
 		<!-- <div class="mt-4">
 			<label for="java-path" class="block text-zinc-50">Java Path</label>
