@@ -9,6 +9,7 @@
 	import { listen } from "@tauri-apps/api/event";
 	import { writeText } from "@tauri-apps/plugin-clipboard-manager";
 	import ChevronUp from "lucide-svelte/icons/chevron-up";
+	import { goto } from "$app/navigation";
 
 	let instances = $state<Instance[]>([]);
 	let profiles = $state<MinecraftProfile[]>([]);
@@ -102,10 +103,10 @@
 								{/snippet}
 							</DropdownMenu.Trigger>
 							<DropdownMenu.Content side="top" class="w-[--bits-dropdown-menu-anchor-width]">
-								<DropdownMenu.Item onclick={() => (window.location.href = "/accounts")}>
+								<DropdownMenu.Item onclick={() => (goto("/accounts"))}>
 									<span>Accounts</span>
 								</DropdownMenu.Item>
-								<DropdownMenu.Item onclick={() => (window.location.href = "/settings")}>
+								<DropdownMenu.Item onclick={() => (goto("/settings"))}>
 									<span>Settings</span>
 								</DropdownMenu.Item>
 								<DropdownMenu.Item>
