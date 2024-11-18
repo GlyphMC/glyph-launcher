@@ -4,6 +4,8 @@
 	import * as Sidebar from "$lib/components/ui/sidebar/index";
 	import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index";
 	import * as Card from "$lib/components/ui/card/index";
+	import { ScrollArea } from "$lib/components/ui/scroll-area/index";
+	import { Separator } from "$lib/components/ui/separator/index";
 	import type { Instance, LoginDetailsEvent, MinecraftProfile } from "$lib/types";
 	import { invoke } from "@tauri-apps/api/core";
 	import { listen } from "@tauri-apps/api/event";
@@ -73,7 +75,7 @@
 	</div>
 {/if}
 
-<Sidebar.Root collapsible="icon" data-tauri-drag-region>
+<Sidebar.Root collapsible="icon">
 	<div class="flex h-screen flex-col gap-y-4 p-4">
 		<Sidebar.Header class="text-zinc-100 hover:text-zinc-50">
 			<a href="/" class="font-bold">Glyph Launcher</a>
@@ -81,7 +83,19 @@
 			<Button variant="outline">Add instance</Button>
 		</Sidebar.Header>
 
-		<Sidebar.Content></Sidebar.Content>
+		<Sidebar.Content class="ml-4 mr-4 mt-0">
+			<ScrollArea class="h-96 w-full rounded-md border">
+				<div class="p-4">
+					<h4 class="mb-4 text-sm font-medium leading-none">Instances</h4>
+					{#each instances as instance}
+						<div class="text-sm">
+							{instance.name}
+						</div>
+						<Separator class="my-2" />
+					{/each}
+				</div>
+			</ScrollArea>
+		</Sidebar.Content>
 
 		<Sidebar.Footer>
 			{#if selectedProfile}
@@ -103,10 +117,10 @@
 								{/snippet}
 							</DropdownMenu.Trigger>
 							<DropdownMenu.Content side="top" class="w-[--bits-dropdown-menu-anchor-width]">
-								<DropdownMenu.Item onclick={() => (goto("/accounts"))}>
+								<DropdownMenu.Item onclick={() => goto("/accounts")}>
 									<span>Accounts</span>
 								</DropdownMenu.Item>
-								<DropdownMenu.Item onclick={() => (goto("/settings"))}>
+								<DropdownMenu.Item onclick={() => goto("/settings")}>
 									<span>Settings</span>
 								</DropdownMenu.Item>
 								<DropdownMenu.Item>

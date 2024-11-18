@@ -13,7 +13,7 @@
 	<AppSidebar />
 	<Sidebar.Trigger class="z-50 flex h-12 items-center justify-between px-4 hover:bg-transparent" />
 	{@render children()}
-	<section class="pb-12">
+	<div class="pb-12">
 		<Titlebar />
-	</section>
+	</div>
 </Sidebar.Provider>
