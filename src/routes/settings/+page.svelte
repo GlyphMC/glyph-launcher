@@ -3,7 +3,7 @@
 	import { listen } from "@tauri-apps/api/event";
 	import { platform } from "@tauri-apps/plugin-os";
 	import { onMount } from "svelte";
-	import ProgressBars from "$lib/components/ProgressBars.svelte";
+	import ProgressBars from "$lib/components/core/ProgressBars.svelte";
 	import { Checkbox } from "$lib/components/ui/checkbox/index";
 	import { Label } from "$lib/components/ui/label/index";
 	import { Input } from "$lib/components/ui/input/index";

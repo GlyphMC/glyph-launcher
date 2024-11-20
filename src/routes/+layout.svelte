@@ -1,7 +1,7 @@
 <script lang="ts">
 	import * as Sidebar from "$lib/components/ui/sidebar/index";
-	import AppSidebar from "$lib/ui/Sidebar.svelte";
-	import Titlebar from "$lib/ui/Titlebar.svelte";
+	import AppSidebar from "$lib/components/core/Sidebar.svelte";
+	import Titlebar from "$lib/components/core/Titlebar.svelte";
 	import { ModeWatcher } from "mode-watcher";
 	import "../app.pcss";
 
