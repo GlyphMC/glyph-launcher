@@ -1,8 +1,8 @@
 <script lang="ts">
-	import Minus from "svelte-heros-v2/Minus.svelte";
-	import ChevronUp from "svelte-heros-v2/ChevronUp.svelte";
-	import ChevronDown from "svelte-heros-v2/ChevronDown.svelte";
-	import XMark from "svelte-heros-v2/XMark.svelte";
+	import Minus from "lucide-svelte/icons/minus";
+	import ChevronUp from "lucide-svelte/icons/chevron-up";
+	import ChevronDown from "lucide-svelte/icons/chevron-down";
+	import X from "lucide-svelte/icons/x";
 	import { getCurrentWindow } from "@tauri-apps/api/window";
 
 	let maximized = $state(false);
@@ -41,5 +41,5 @@
 	{:else}
 		{@render titlebarButton(ChevronUp, async () => await maximizeWindow())}
 	{/if}
-	{@render titlebarButton(XMark, async () => await closeWindow())}
+	{@render titlebarButton(X, async () => await closeWindow())}
 </div>
