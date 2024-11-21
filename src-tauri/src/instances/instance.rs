@@ -1,14 +1,48 @@
-use serde::{Deserialize, Serialize};
+use std::{fs, path::PathBuf};
 
-use super::structs::Instance;
+use anyhow::{anyhow, Error, Result};
 
-#[derive(Serialize, Deserialize, Debug)]
-#[serde(rename_all = "camelCase")]
-pub struct InstanceConfig {
-    has_launched: bool,
-    rich_presence: bool,
-    minimized: bool,
-    memory: String,
+use super::structs::{Instance, InstanceConfig};
+
+fn get_instances_path() -> Result<PathBuf, Error> {
+    let config_dir = crate::config::get_config_dir()?;
+    Ok(config_dir.join("instances.json"))
+}
+
+pub fn create_default_instances_file() -> Result<(), Error> {
+    let instance_config = InstanceConfig { instances: vec![] };
+    let instances_path = get_instances_path()?;
+
+    if let Some(parent) = instances_path.parent() {
+        fs::create_dir_all(parent)
+            .map_err(|e| anyhow!("Failed to create instances directory: {}", e))?;
+    }
+
+    let instances_data = serde_json::to_string_pretty(&instance_config)?;
+    fs::write(instances_path, instances_data)
+        .map_err(|e| anyhow!("Failed to write instances file: {}", e))?;
+
+    Ok(())
+}
+
+pub fn get_instances() -> Result<InstanceConfig, Error> {
+	let instances_path = get_instances_path()?;
+	let instances_data = fs::read_to_string(instances_path)
+		.map_err(|e| anyhow!("Failed to read instances file: {}", e))?;
+	let instance_config: InstanceConfig = serde_json::from_str(&instances_data)
+		.map_err(|e| anyhow!("Failed to parse instances file: {}", e))?;
+
+	Ok(instance_config)
+}
+
+pub fn get_instance(slug: String) -> Result<Instance, Error> {
+	let instance_config = get_instances()?;
+
+	instance_config
+		.instances
+		.into_iter()
+		.find(|inst| inst.slug == slug)
+		.ok_or_else(|| anyhow!("Instance with slug '{}' not found", slug))
 }
 
 pub fn make_instance(instance: Instance) {}

@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use instances::instance;
 use log::info;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
@@ -32,15 +33,17 @@ pub fn run() {
             AppState { client }
         })
         .setup(|app| {
-            let handle = app.handle();
-            let window = handle.get_webview_window("main").unwrap();
 
-            if cfg!(debug_assertions) {
+            #[cfg(debug_assertions)]
+			{
                 app.handle().plugin(
                     tauri_plugin_log::Builder::default()
                         .level(log::LevelFilter::Info)
                         .build(),
                 )?;
+
+	            let handle = app.handle();
+	            let window = handle.get_webview_window("main").unwrap();
                 window.open_devtools();
             }
 
@@ -48,6 +51,7 @@ pub fn run() {
             info!("First launch: {}", is_first_launch);
             if is_first_launch {
                 config::create_default_config_file()?;
+                instance::create_default_instances_file()?;
             }
 
             let handle = app.handle().clone();
@@ -57,14 +61,17 @@ pub fn run() {
                 let client = binding.lock().await;
                 auth::auth::refresh(&client).await
             });
+
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
             commands::login,
             commands::get_minecraft_profiles,
-			commands::download_java,
-			commands::extract_java,
-			commands::save_java_to_config,
+            commands::download_java,
+            commands::extract_java,
+            commands::save_java_to_config,
+			commands::get_instances,
+			commands::get_instance,
         ])
         .run(tauri::generate_context!())
         .expect("Error while running Tauri Application");

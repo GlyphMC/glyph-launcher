@@ -6,7 +6,7 @@
 	import * as Card from "$lib/components/ui/card/index";
 	import { ScrollArea } from "$lib/components/ui/scroll-area/index";
 	import { Separator } from "$lib/components/ui/separator/index";
-	import type { Instance, LoginDetailsEvent, MinecraftProfile } from "$lib/types";
+	import type { Instance, InstanceConfig, LoginDetailsEvent, MinecraftProfile } from "$lib/types";
 	import { invoke } from "@tauri-apps/api/core";
 	import { listen } from "@tauri-apps/api/event";
 	import { writeText } from "@tauri-apps/plugin-clipboard-manager";
@@ -14,6 +14,8 @@
 	import { goto } from "$app/navigation";
 
 	let instances = $state<Instance[]>([]);
+	let searchInput = $state("");
+	let filteredInstances = $state<Instance[]>([]);
 	let profiles = $state<MinecraftProfile[]>([]);
 	let selectedProfile = $state<MinecraftProfile>();
 	let loginCode = $state("");
@@ -21,8 +23,21 @@
 	let showPopUp = $state(false);
 
 	async function fetchInstances() {
-		await invoke<Instance[]>("get_instances").then((data) => (instances = data));
+		await invoke<InstanceConfig>("get_instances").then((data) => {
+			instances = data.instances;
+			filterInstances();
+		});
 	}
+
+	function filterInstances() {
+		if (searchInput.trim() === "") {
+			filteredInstances = instances;
+		} else {
+			filteredInstances = instances.filter((instance) => instance.name.toLowerCase().includes(searchInput.toLowerCase()));
+		}
+	}
+
+	$effect(() => filterInstances());
 
 	async function getMinecraftProfiles() {
 		await invoke<MinecraftProfile[]>("get_minecraft_profiles").then((data) => {
@@ -50,10 +65,6 @@
 		await writeText(loginCode).then(() => open(verificationUri));
 	}
 
-	$effect(() => {
-		console.log(loginCode, verificationUri);
-	});
-
 	fetchInstances();
 	getMinecraftProfiles();
 </script>
@@ -79,19 +90,21 @@
 	<div class="flex h-screen flex-col gap-y-4 p-4">
 		<Sidebar.Header class="text-zinc-100 hover:text-zinc-50">
 			<a href="/" class="font-bold">Glyph Launcher</a>
-			<Input type="text" placeholder="Search instances..." />
+			<Input type="text" placeholder="Search instances..." bind:value={searchInput} />
 			<Button variant="outline">Add instance</Button>
 		</Sidebar.Header>
 
-		<Sidebar.Content class="ml-4 mr-4 mt-0">
+		<Sidebar.Content class="ml-2 mr-2 mt-0">
 			<ScrollArea class="h-96 w-full rounded-md border">
 				<div class="p-4">
-					<h4 class="mb-4 text-sm font-medium leading-none">Instances</h4>
-					{#each instances as instance}
-						<div class="text-sm">
-							{instance.name}
-						</div>
-						<Separator class="my-2" />
+					<h4 class="mb-4 text-sm font-bold leading-none">Instances</h4>
+					{#each filteredInstances as instance}
+						<a href="/instance/{instance.slug}">
+							<div>
+								<p class="text-sm">{instance.name}</p>
+								<Separator class="my-2" />
+							</div>
+						</a>
 					{/each}
 				</div>
 			</ScrollArea>

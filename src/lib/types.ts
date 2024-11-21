@@ -22,20 +22,30 @@ export type ProgressEvent = {
 	percentage: number;
 };
 
+export type InstanceConfig = {
+	instances: Instance[];
+}
+
 export type Instance = {
+	name: string;
+	slug: string;
 	game: {
+		version: string;
 		modloader: {
 			loader: string;
 			version: string;
 		};
-		version: string;
 	};
 	java: {
-		jvm_arguments: string[];
 		path: string;
+		args: string[];
 	};
-	name: string;
-	slug: string;
+	settings: {
+		hasLaunched : boolean;
+		richPresence: boolean;
+		minimized: boolean;
+		memory: number;
+	};
 };
 
 export type MinecraftProfile = {
