@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { invoke } from "@tauri-apps/api/core";
 	import type { MinecraftProfile } from "$lib/types";
-	import { Checkbox } from "$lib/components/ui/checkbox/index";
-	import { Label } from "$lib/components/ui/label/index";
+	import { Checkbox } from "$lib/components/ui/checkbox";
+	import { Label } from "$lib/components/ui/label";
 
 	let profiles = $state<MinecraftProfile[]>([]);
 	let selectedProfile = $state<MinecraftProfile>();

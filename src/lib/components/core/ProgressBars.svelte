@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Progress } from "$lib/components/ui/progress/index";
+	import { Progress } from "$lib/components/ui/progress";
 
 	type Props = {
 		java8Progress: number;

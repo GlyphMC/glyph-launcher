@@ -4,14 +4,14 @@
 	import { platform } from "@tauri-apps/plugin-os";
 	import { onMount } from "svelte";
 	import ProgressBars from "$lib/components/core/ProgressBars.svelte";
-	import { Checkbox } from "$lib/components/ui/checkbox/index";
-	import { Label } from "$lib/components/ui/label/index";
-	import { Input } from "$lib/components/ui/input/index";
+	import { Checkbox } from "$lib/components/ui/checkbox";
+	import { Label } from "$lib/components/ui/label";
+	import { Input } from "$lib/components/ui/input";
 	import type { ExtractState, DownloadState, JavaPaths, ProgressEvent, JavaProgress } from "$lib/types";
-	import { Button, buttonVariants } from "$lib/components/ui/button/index";
+	import { Button, buttonVariants } from "$lib/components/ui/button";
 	import { resetMode, setMode } from "mode-watcher";
-	import * as Card from "$lib/components/ui/card/index";
-	import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index";
+	import * as Card from "$lib/components/ui/card";
+	import * as DropdownMenu from "$lib/components/ui/dropdown-menu";
 
 	let startMaximized = $state(false);
 	let windowWidth = $state(854);
@@ -134,7 +134,7 @@
 	</div>
 {/if}
 
-<div class="overflow-hidden font-display w-full">
+<div class="w-full overflow-hidden font-display">
 	<p class="px-10 pt-10 text-3xl font-bold text-zinc-50">Settings</p>
 
 	<div class="px-10 py-5">

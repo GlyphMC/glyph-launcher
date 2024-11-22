@@ -45,4 +45,14 @@ pub fn get_instance(slug: String) -> Result<Instance, Error> {
 		.ok_or_else(|| anyhow!("Instance with slug '{}' not found", slug))
 }
 
-pub fn make_instance(instance: Instance) {}
+pub fn create_instance(mut instance: Instance, url: String) {
+	// the instance we receive does not have java set up
+	// we need to set it up here
+
+	// if version is from 1.8 to 1.16.4, use Java 8
+	// if version is from 1.16.5 to 1.17.1, use Java
+	//
+
+	
+
+}

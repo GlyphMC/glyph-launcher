@@ -43,7 +43,7 @@ export type Instance = {
 	settings: {
 		hasLaunched : boolean;
 		richPresence: boolean;
-		minimized: boolean;
+		maximised: boolean;
 		memory: number;
 	};
 };
@@ -68,3 +68,15 @@ export type MinecraftProfile = {
 		}
 	];
 };
+
+export type Version = {
+	id: string;
+	type: string;
+	url: string;
+	time: string;
+	releaseTime: string;
+	sha1: string;
+	complianceLevel: number;
+}
+
+export type Modloader = "Vanilla" | "Forge" | "Neoforge" | "Fabric" | "";

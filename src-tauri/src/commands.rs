@@ -13,7 +13,7 @@ use crate::{
         self,
         structs::{Instance, InstanceConfig},
     },
-    java, AppState,
+    java, resources::{self, versions::Version}, AppState,
 };
 
 #[tauri::command]
@@ -69,4 +69,15 @@ pub async fn get_instances() -> Result<InstanceConfig, ()> {
 pub async fn get_instance(slug: String) -> Result<Instance, ()> {
     let instance = instances::instance::get_instance(slug).unwrap();
     Ok(instance)
+}
+
+#[tauri::command]
+pub fn create_instance(instance: Instance, url: String) {
+	instances::instance::create_instance(instance, url);
+}
+
+#[tauri::command]
+pub async fn get_versions(state: State<'_, AppState>) -> Result<Vec<Version>, ()> {
+    let versions = resources::versions::get_versions(state).await.unwrap();
+    Ok(versions)
 }

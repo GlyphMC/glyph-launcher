@@ -12,6 +12,7 @@ mod commands;
 mod config;
 mod instances;
 mod java;
+mod resources;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Payload<'a> {
@@ -72,6 +73,8 @@ pub fn run() {
             commands::save_java_to_config,
 			commands::get_instances,
 			commands::get_instance,
+			commands::create_instance,
+			commands::get_versions,
         ])
         .run(tauri::generate_context!())
         .expect("Error while running Tauri Application");

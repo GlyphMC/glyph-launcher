@@ -1,5 +1,5 @@
 <script lang="ts">
-	import * as Sidebar from "$lib/components/ui/sidebar/index";
+	import * as Sidebar from "$lib/components/ui/sidebar";
 	import AppSidebar from "$lib/components/core/Sidebar.svelte";
 	import Titlebar from "$lib/components/core/Titlebar.svelte";
 	import { ModeWatcher } from "mode-watcher";

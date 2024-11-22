@@ -37,6 +37,6 @@ pub struct Java {
 pub struct Settings {
     has_launched: bool,
 	rich_presence: bool,
-    minimized: bool,
+    maximised: bool,
     memory: u64,
 }
