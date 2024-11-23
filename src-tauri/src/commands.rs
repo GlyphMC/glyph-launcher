@@ -13,7 +13,9 @@ use crate::{
         self,
         structs::{Instance, InstanceConfig},
     },
-    java, resources::{self, versions::Version}, AppState,
+    java,
+    resources::{self, versions::Version},
+    AppState,
 };
 
 #[tauri::command]
@@ -72,8 +74,18 @@ pub async fn get_instance(slug: String) -> Result<Instance, ()> {
 }
 
 #[tauri::command]
-pub fn create_instance(instance: Instance, url: String) {
-	instances::instance::create_instance(instance, url);
+pub async fn create_instance(
+    state: State<'_, AppState>,
+    handle: AppHandle,
+    instance: Instance,
+    url: String,
+) -> Result<(), ()> {
+    if let Err(e) = instances::instance::create_instance(state, handle, instance, url).await {
+        eprintln!("Error creating instance: {:?}", e);
+        return Err(());
+    }
+
+    Ok(())
 }
 
 #[tauri::command]

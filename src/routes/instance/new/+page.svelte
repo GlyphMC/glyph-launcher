@@ -7,7 +7,7 @@
 	import * as Select from "$lib/components/ui/select";
 	import type { Instance, Modloader, Version } from "$lib/types";
 	import { invoke } from "@tauri-apps/api/core";
-	import { version } from "vite";
+	import { goto } from "$app/navigation";
 
 	let instanceName = $state("");
 	let latestReleaseVersion = $state<Version>();
@@ -68,6 +68,7 @@
 		}
 		await invoke("create_instance", { instance, url: version.url }).then(() => {
 			console.log("Instance created successfully");
+			goto(`/instance/${instance.slug}`);
 		});
 	}
 

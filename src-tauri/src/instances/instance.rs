@@ -1,6 +1,9 @@
 use std::{fs, path::PathBuf};
 
 use anyhow::{anyhow, Error, Result};
+use tauri::{AppHandle, Emitter, State};
+
+use crate::{config, instances::structs::Java, resources::version, AppState, Payload};
 
 use super::structs::{Instance, InstanceConfig};
 
@@ -26,33 +29,70 @@ pub fn create_default_instances_file() -> Result<(), Error> {
 }
 
 pub fn get_instances() -> Result<InstanceConfig, Error> {
-	let instances_path = get_instances_path()?;
-	let instances_data = fs::read_to_string(instances_path)
-		.map_err(|e| anyhow!("Failed to read instances file: {}", e))?;
-	let instance_config: InstanceConfig = serde_json::from_str(&instances_data)
-		.map_err(|e| anyhow!("Failed to parse instances file: {}", e))?;
+    let instances_path = get_instances_path()?;
+    let instances_data = fs::read_to_string(instances_path)
+        .map_err(|e| anyhow!("Failed to read instances file: {}", e))?;
+    let instance_config = serde_json::from_str::<InstanceConfig>(&instances_data)
+        .map_err(|e| anyhow!("Failed to parse instances file: {}", e))?;
 
-	Ok(instance_config)
+    Ok(instance_config)
 }
 
 pub fn get_instance(slug: String) -> Result<Instance, Error> {
-	let instance_config = get_instances()?;
+    let instance_config = get_instances()?;
 
-	instance_config
-		.instances
-		.into_iter()
-		.find(|inst| inst.slug == slug)
-		.ok_or_else(|| anyhow!("Instance with slug '{}' not found", slug))
+    instance_config
+        .instances
+        .into_iter()
+        .find(|inst| inst.slug == slug)
+        .ok_or_else(|| anyhow!("Instance with slug '{}' not found", slug))
 }
 
-pub fn create_instance(mut instance: Instance, url: String) {
-	// the instance we receive does not have java set up
-	// we need to set it up here
+pub async fn create_instance(
+    state: State<'_, AppState>,
+	handle: AppHandle,
+    mut instance: Instance,
+    url: String,
+) -> Result<(), Error> {
+    let manifest = version::get_version_manifest(state, url).await?;
+    let java_version = manifest.java_version.major_version;
+    let config = config::get_config()?;
+    let java_config = config.java;
+    let instance_config = get_instances()?;
+    let mut instances = instance_config.instances;
 
-	// if version is from 1.8 to 1.16.4, use Java 8
-	// if version is from 1.16.5 to 1.17.1, use Java
-	//
+    match java_version {
+        8 => {
+            instance.java = Java {
+                path: java_config.java_8_path,
+                args: vec![],
+            };
+        }
+        17 => {
+            instance.java = Java {
+                path: java_config.java_17_path,
+                args: vec![],
+            };
+        }
+        21 => {
+            instance.java = Java {
+                path: java_config.java_21_path,
+                args: vec![],
+            };
+        }
+        _ => return Err(anyhow!("Unsupported Java version: {}", java_version)),
+    }
 
-	
+    instances.push(instance);
+    let new_instance_config = InstanceConfig { instances };
+    let instances_path = get_instances_path()?;
+    let instances_data = serde_json::to_string_pretty(&new_instance_config)?;
+    fs::write(instances_path, instances_data)
+        .map_err(|e| anyhow!("Failed to write instances file: {}", e))?;
 
+	handle.emit("instance-created", Payload {
+		message: "Instance created",
+	}).unwrap();
+
+    Ok(())
 }

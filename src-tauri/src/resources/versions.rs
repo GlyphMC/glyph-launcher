@@ -6,7 +6,7 @@ use tauri::State;
 use crate::AppState;
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct VersionManifest {
+pub struct VersionsManifest {
     latest: Latest,
     versions: Vec<Version>,
 }
@@ -30,7 +30,7 @@ pub struct Version {
     compliance_level: i32,
 }
 
-async fn get_version_manifest(state: State<'_, AppState>) -> Result<VersionManifest, Error> {
+async fn get_versions_manifest(state: State<'_, AppState>) -> Result<VersionsManifest, Error> {
     let client = state.client.lock().await;
     let response = client
         .get("https://piston-meta.mojang.com/mc/game/version_manifest_v2.json")
@@ -43,7 +43,7 @@ async fn get_version_manifest(state: State<'_, AppState>) -> Result<VersionManif
 }
 
 pub async fn get_versions(state: State<'_, AppState>) -> Result<Vec<Version>, Error> {
-    let manifest = get_version_manifest(state).await?;
+    let manifest = get_versions_manifest(state).await?;
     let mut versions = manifest.versions;
     versions.sort_by(|a, b| {
         let time_a = DateTime::parse_from_rfc3339(&a.release_time).unwrap();

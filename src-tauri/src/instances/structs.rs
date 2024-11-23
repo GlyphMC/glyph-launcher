@@ -10,7 +10,7 @@ pub struct Instance {
     pub slug: String,
     pub name: String,
     game: Game,
-    java: Java,
+    pub java: Java,
 	settings: Settings
 }
 
@@ -28,8 +28,8 @@ struct Modloader {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Java {
-    path: String,
-    args: Vec<String>,
+    pub path: String,
+    pub args: Vec<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]

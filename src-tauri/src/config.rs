@@ -69,7 +69,7 @@ pub fn get_config() -> Result<Config, Error> {
     let config_path = get_config_path()?;
     let config_data = fs::read_to_string(config_path)
         .map_err(|e| anyhow!("Failed to read config file: {}", e))?;
-    let config: Config = serde_json::from_str(&config_data)
+    let config = serde_json::from_str::<Config>(&config_data)
         .map_err(|e| anyhow!("Failed to parse config file: {}", e))?;
     Ok(config)
 }

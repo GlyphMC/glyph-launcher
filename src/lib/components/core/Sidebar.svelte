@@ -39,6 +39,10 @@
 
 	$effect(() => filterInstances());
 
+	listen("instance-created", () => {
+		fetchInstances();
+	});
+
 	async function getMinecraftProfiles() {
 		await invoke<MinecraftProfile[]>("get_minecraft_profiles").then((data) => {
 			profiles = data;
