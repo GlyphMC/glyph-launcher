@@ -39,7 +39,7 @@ pub async fn login(state: &State<'_, AppState>, handle: AppHandle) -> Result<Min
         uri: &device_response.verification_uri,
     };
 
-    handle.emit("login-details", login_details).unwrap();
+    handle.emit("login-details", login_details)?;
 
     let mut authentication_response: Option<AuthorizationTokenResponse> = None;
     while authentication_response.is_none() {
@@ -143,7 +143,7 @@ pub async fn refresh(client: &Client) -> Result<(), Error> {
                 profile,
             };
 
-            let mut config = config::get_config().unwrap();
+            let mut config = config::get_config()?;
             config
                 .accounts
                 .retain(|acc| acc.profile.id != new_account.profile.id);

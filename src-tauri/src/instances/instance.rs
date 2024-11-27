@@ -8,7 +8,7 @@ use crate::{config, instances::structs::Java, resources::version, AppState, Payl
 use super::structs::{Instance, InstanceConfig};
 
 fn get_instances_path() -> Result<PathBuf, Error> {
-    let config_dir = crate::config::get_config_dir()?;
+    let config_dir = config::get_config_dir()?;
     Ok(config_dir.join("instances.json"))
 }
 
@@ -50,7 +50,7 @@ pub fn get_instance(slug: String) -> Result<Instance, Error> {
 
 pub async fn create_instance(
     state: State<'_, AppState>,
-	handle: AppHandle,
+    handle: AppHandle,
     mut instance: Instance,
     url: String,
 ) -> Result<(), Error> {
@@ -90,9 +90,33 @@ pub async fn create_instance(
     fs::write(instances_path, instances_data)
         .map_err(|e| anyhow!("Failed to write instances file: {}", e))?;
 
-	handle.emit("instance-created", Payload {
-		message: "Instance created",
-	}).unwrap();
+    handle.emit(
+        "instance-list-updated",
+        Payload {
+            message: "Instance created",
+        },
+    )?;
 
     Ok(())
+}
+
+pub fn delete_instance(handle: AppHandle, slug: String) -> Result<(), Error> {
+    let instance_config = get_instances()?;
+    let instances = instance_config.instances;
+    let new_instances = instances
+        .into_iter()
+        .filter(|inst| inst.slug != slug)
+        .collect();
+    let new_instance_config = InstanceConfig {
+        instances: new_instances,
+    };
+    let instances_path = get_instances_path()?;
+    let instances_data = serde_json::to_string_pretty(&new_instance_config).unwrap();
+    fs::write(instances_path, instances_data)?;
+
+	handle.emit("instance-list-updated", Payload {
+		message: "Instance deleted"
+	})?;
+
+	Ok(())
 }

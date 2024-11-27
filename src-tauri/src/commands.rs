@@ -25,7 +25,7 @@ pub async fn login(state: State<'_, AppState>, handle: AppHandle) -> Result<Prof
 }
 
 #[tauri::command]
-pub async fn get_minecraft_profiles() -> Result<Vec<Profile>, ()> {
+pub fn get_minecraft_profiles() -> Result<Vec<Profile>, ()> {
     let config = config::get_config().unwrap();
     let default_account = Account::default();
     let accounts = config.accounts;
@@ -57,18 +57,18 @@ pub async fn extract_java(
 }
 
 #[tauri::command]
-pub async fn save_java_to_config(paths: (PathBuf, PathBuf, PathBuf)) {
+pub fn save_java_to_config(paths: (PathBuf, PathBuf, PathBuf)) {
     java::config::save_java_to_config(paths).unwrap();
 }
 
 #[tauri::command]
-pub async fn get_instances() -> Result<InstanceConfig, ()> {
+pub fn get_instances() -> Result<InstanceConfig, ()> {
     let instance_config = instances::instance::get_instances().unwrap();
     Ok(instance_config)
 }
 
 #[tauri::command]
-pub async fn get_instance(slug: String) -> Result<Instance, ()> {
+pub fn get_instance(slug: String) -> Result<Instance, ()> {
     let instance = instances::instance::get_instance(slug).unwrap();
     Ok(instance)
 }
@@ -86,6 +86,16 @@ pub async fn create_instance(
     }
 
     Ok(())
+}
+
+#[tauri::command]
+pub fn delete_instance(handle: AppHandle, slug: String) -> Result<(), ()> {
+	if let Err(e) = instances::instance::delete_instance(handle, slug) {
+		eprintln!("Error deleting instance: {:?}", e);
+		return Err(());
+	}
+
+	Ok(())
 }
 
 #[tauri::command]

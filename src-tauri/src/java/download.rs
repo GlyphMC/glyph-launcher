@@ -14,17 +14,18 @@ use crate::{
 
 const BASE_URL: &str = "https://api.azul.com/metadata/v1/zulu/packages/";
 
-pub async fn download_java(state: &State<'_, AppState>, handle: AppHandle) -> Result<(PathBuf, PathBuf, PathBuf), Error> {
-    handle
-        .emit(
-            "download-started",
-            Payload {
-                message: "Download started",
-            },
-        )
-        .unwrap();
+pub async fn download_java(
+    state: &State<'_, AppState>,
+    handle: AppHandle,
+) -> Result<(PathBuf, PathBuf, PathBuf), Error> {
+    handle.emit(
+        "download-started",
+        Payload {
+            message: "Download started",
+        },
+    )?;
 
-	let client = state.client.lock().await;
+    let client = state.client.lock().await;
 
     let handle_8 = {
         let client = client.clone();
@@ -39,7 +40,7 @@ pub async fn download_java(state: &State<'_, AppState>, handle: AppHandle) -> Re
     };
 
     let handle_21 = {
-		let client = client.clone();
+        let client = client.clone();
         let handle = handle.clone();
         spawn(async move { download_java_version("21", client, handle).await })
     };
@@ -48,22 +49,24 @@ pub async fn download_java(state: &State<'_, AppState>, handle: AppHandle) -> Re
     let java_17_archive_path = handle_17.await??;
     let java_21_archive_path = handle_21.await??;
 
-    handle
-        .emit(
-            "download-finished",
-            Payload {
-                message: "Download finished",
-            },
-        )
-        .unwrap();
+    handle.emit(
+        "download-finished",
+        Payload {
+            message: "Download finished",
+        },
+    )?;
 
-    Ok((java_8_archive_path, java_17_archive_path, java_21_archive_path))
+    Ok((
+        java_8_archive_path,
+        java_17_archive_path,
+        java_21_archive_path,
+    ))
 }
 
 async fn download_java_version(
-	version: &str,
-	client: Client,
-	handle: AppHandle,
+    version: &str,
+    client: Client,
+    handle: AppHandle,
 ) -> Result<PathBuf, Error> {
     let config_dir = config::get_config_dir()?;
     let runtime_dir = config_dir.join("runtime");
@@ -89,7 +92,7 @@ async fn download_java_version(
         ("archive_type", archive_type),
         ("java_package_type", "jdk"),
         ("javafx_bundled", "false"),
-		("crac_supported", "false"),
+        ("crac_supported", "false"),
         ("latest", "true"),
         ("release_status", "ga"),
     ];
@@ -106,7 +109,7 @@ async fn download_java_version(
 
             let mut zip_response = client.get(download_url).send().await?;
 
-            if zip_response.status().is_success() {
+            return if zip_response.status().is_success() {
                 let file_name = download_url.split("/").last().unwrap();
                 let file_path = runtime_dir.join(file_name);
                 let mut file = File::create(runtime_dir.join(file_name)).await?;
@@ -127,9 +130,7 @@ async fn download_java_version(
                     let percentage = (downloaded_size as f64 / total_size as f64) * 100.0;
                     let progress = Progress { percentage };
 
-                    handle
-                        .emit(&format!("java-download-progress-{}", version), progress)
-                        .unwrap();
+                    handle.emit(&format!("java-download-progress-{}", version), progress)?;
                 }
 
                 info!(
@@ -138,13 +139,13 @@ async fn download_java_version(
                     runtime_dir.join(file_name).to_string_lossy()
                 );
 
-                return Ok(file_path);
+                Ok(file_path)
             } else {
-                return Err(anyhow!(
+                Err(anyhow!(
                     "Failed to download ZIP file, status: {}",
                     zip_response.status()
-                ));
-            }
+                ))
+            };
         }
     } else {
         info!("Request failed with status: {}", response.status());

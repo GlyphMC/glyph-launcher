@@ -4,10 +4,7 @@ use anyhow::{anyhow, Error, Result};
 use dirs::config_dir;
 use serde::{Deserialize, Serialize};
 
-use crate::{
-    auth::{self, account::Account},
-    java::structs::JavaConfig,
-};
+use crate::{auth::account::Account, java::structs::JavaConfig};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
@@ -54,7 +51,7 @@ pub fn config_file_exists() -> Result<bool, Error> {
 }
 
 pub fn create_default_config_file() -> Result<(), Error> {
-    let default_account = auth::account::Account::default();
+    let default_account = Account::default();
 
     let default_config = Config {
         accounts: vec![default_account],

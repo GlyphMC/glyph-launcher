@@ -39,7 +39,7 @@
 
 	$effect(() => filterInstances());
 
-	listen("instance-created", () => {
+	listen("instance-list-updated", () => {
 		fetchInstances();
 	});
 

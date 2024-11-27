@@ -25,8 +25,7 @@ pub async fn extract_java(
             Payload {
                 message: "Extract started",
             },
-        )
-        .unwrap();
+        )?;
 
     let handle_8 = {
         let handle = handle.clone();
@@ -65,8 +64,7 @@ pub async fn extract_java(
             Payload {
                 message: "Extract finished",
             },
-        )
-        .unwrap();
+        )?;
 
     Ok((output_dir_8, output_dir_17, output_dir_21))
 }
@@ -123,8 +121,7 @@ fn extract_zip(
         let progress = Progress { percentage };
 
         handle
-            .emit(&format!("java-extract-progress-{}", version), progress)
-            .unwrap();
+            .emit(&format!("java-extract-progress-{}", version), progress)?;
 
         if file.name().ends_with("/") {
             fs::create_dir_all(output_path)?;
@@ -185,8 +182,7 @@ fn extract_tar_gz(
         let progress = Progress { percentage };
 
         handle
-            .emit(&format!("java-extract-progress-{}", version), progress)
-            .unwrap();
+            .emit(&format!("java-extract-progress-{}", version), progress)?;
 
         entry.unpack(&output_path)?;
     }
