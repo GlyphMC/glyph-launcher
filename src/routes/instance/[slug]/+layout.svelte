@@ -12,7 +12,9 @@
 
 	async function fetchTimePlayed() {}
 
-	async function launchInstance() {}
+	async function launchInstance() {
+		invoke("launch_instance", { slug: data.slug });
+	}
 
 	function getInstance() {
 		invoke<Instance>("get_instance", { slug: data.slug }).then((data) => {

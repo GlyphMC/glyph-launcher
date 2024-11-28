@@ -35,6 +35,7 @@ export type Instance = {
 			loader: string;
 			version: string;
 		};
+		url: string;
 	};
 	java: {
 		path: string;

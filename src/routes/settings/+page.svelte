@@ -64,7 +64,7 @@
 	listen("extract-started", () => (extractState = "extracting"));
 	listen("extract-finished", () => (extractState = "done"));
 
-	function setProgressListener(name: String, stateKey: keyof typeof javaProgress, version: number) {
+	function setProgressListener(name: string, stateKey: keyof typeof javaProgress, version: number) {
 		listen<ProgressEvent>(`${name}-progress-${version}`, (event) => {
 			javaProgress[stateKey][version] = event.payload.percentage;
 		});

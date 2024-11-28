@@ -69,7 +69,7 @@ pub fn get_instances() -> Result<InstanceConfig, ()> {
 
 #[tauri::command]
 pub fn get_instance(slug: String) -> Result<Instance, ()> {
-    let instance = instances::instance::get_instance(slug).unwrap();
+    let instance = instances::instance::get_instance(&slug).unwrap();
     Ok(instance)
 }
 
@@ -78,9 +78,8 @@ pub async fn create_instance(
     state: State<'_, AppState>,
     handle: AppHandle,
     instance: Instance,
-    url: String,
 ) -> Result<(), ()> {
-    if let Err(e) = instances::instance::create_instance(state, handle, instance, url).await {
+    if let Err(e) = instances::instance::create_instance(state, handle, instance).await {
         eprintln!("Error creating instance: {:?}", e);
         return Err(());
     }
@@ -92,6 +91,19 @@ pub async fn create_instance(
 pub fn delete_instance(handle: AppHandle, slug: String) -> Result<(), ()> {
 	if let Err(e) = instances::instance::delete_instance(handle, slug) {
 		eprintln!("Error deleting instance: {:?}", e);
+		return Err(());
+	}
+
+	Ok(())
+}
+
+#[tauri::command]
+pub async fn launch_instance(
+	state: State<'_, AppState>,
+	slug: String,
+) -> Result<(), ()> {
+	if let Err(e) = resources::launch::launch(state, slug).await {
+		eprintln!("Error launching instance: {:?}", e);
 		return Err(());
 	}
 

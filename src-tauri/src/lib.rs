@@ -75,6 +75,7 @@ pub fn run() {
 			commands::get_instance,
 			commands::create_instance,
 			commands::delete_instance,
+			commands::launch_instance,
 			commands::get_versions,
         ])
         .run(tauri::generate_context!())

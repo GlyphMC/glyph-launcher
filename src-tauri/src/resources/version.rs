@@ -163,10 +163,10 @@ pub struct VersionManifest {
     pub r#type: String,
 }
 
-pub async fn get_version_manifest(state: State<'_, AppState>, url: String) -> Result<VersionManifest, Error> {
+pub async fn get_version_manifest(state: State<'_, AppState>, url: &String) -> Result<VersionManifest, Error> {
 	let client = state.client.lock().await;
 	let response = client
-		.get(&url)
+		.get(url)
 		.send()
 		.await?
 		.json::<VersionManifest>()

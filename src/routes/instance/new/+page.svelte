@@ -54,6 +54,7 @@
 					loader: modloader,
 					version: ""
 				},
+				url: version.url
 			},
 			java: {
 				path: "",
@@ -66,7 +67,7 @@
 				memory: parseInt(ram.join(""))
 			}
 		}
-		await invoke("create_instance", { instance, url: version.url }).then(() => {
+		await invoke("create_instance", { instance }).then(() => {
 			console.log("Instance created successfully");
 			goto(`/instance/${instance.slug}`);
 		});

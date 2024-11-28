@@ -9,15 +9,16 @@ pub struct InstanceConfig {
 pub struct Instance {
     pub slug: String,
     pub name: String,
-    game: Game,
+    pub game: Game,
     pub java: Java,
-	settings: Settings
+	pub settings: Settings
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Game {
-    version: String,
+    pub version: String,
     modloader: Modloader,
+	pub url: String,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -35,7 +36,7 @@ pub struct Java {
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct Settings {
-    has_launched: bool,
+    pub has_launched: bool,
 	rich_presence: bool,
     maximised: bool,
     memory: u64,
