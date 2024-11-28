@@ -10,6 +10,7 @@
 	import { invoke } from "@tauri-apps/api/core";
 	import { listen } from "@tauri-apps/api/event";
 	import { writeText } from "@tauri-apps/plugin-clipboard-manager";
+	import { open } from "@tauri-apps/plugin-shell";
 	import ChevronUp from "lucide-svelte/icons/chevron-up";
 	import { goto } from "$app/navigation";
 
