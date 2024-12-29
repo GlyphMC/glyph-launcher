@@ -8,7 +8,16 @@
 	import { Checkbox } from "$lib/components/ui/checkbox";
 	import { Label } from "$lib/components/ui/label";
 	import { Input } from "$lib/components/ui/input";
-	import type { ExtractState, DownloadState, JavaPaths, ProgressEvent, JavaProgress, ManualJava, ManualJavaTestResults } from "$lib/types";
+	import type {
+		ExtractState,
+		DownloadState,
+		JavaPaths,
+		ProgressEvent,
+		JavaProgress,
+		ManualJava,
+		ManualJavaTestResults,
+		JavaConfig
+	} from "$lib/types";
 	import { Button, buttonVariants } from "$lib/components/ui/button";
 	import { resetMode, setMode } from "mode-watcher";
 	import * as Card from "$lib/components/ui/card";
@@ -49,6 +58,7 @@
 		let platformName = platform();
 		isLinux = platformName === "linux";
 		resetStates();
+		getJavaFromConfig();
 	});
 
 	function resetStates() {
@@ -74,6 +84,15 @@
 	async function saveJavaToConfig(paths: string[]) {
 		invoke("save_java_to_config", { paths }).then(() => {
 			console.log("Java saved to config successfully");
+		});
+	}
+
+	async function getJavaFromConfig() {
+		invoke<JavaConfig>("get_java_from_config").then((data) => {
+			let { java8Path, java17Path, java21Path } = data;
+			manualJava8.path = java8Path;
+			manualJava17.path = java17Path;
+			manualJava21.path = java21Path;
 		});
 	}
 
@@ -141,6 +160,7 @@
 						onclick={() => {
 							resetStates();
 							saveJavaToConfig(paths);
+							getJavaFromConfig();
 						}}
 						variant="outline"
 						disabled={extractState === "extracting"}>
@@ -179,7 +199,7 @@
 						saveJavaToConfig([manualJava8.path, manualJava17.path, manualJava21.path]);
 					}}
 					variant="outline">
-					Close
+					Save
 				</Button>
 			</Card.Footer>
 		</Card.Root>
@@ -248,12 +268,12 @@
 			{@render javaPathInput(manualJava8)}
 			{@render javaPathInput(manualJava17)}
 			{@render javaPathInput(manualJava21)}
-			<Button class="mt-4" variant="destructive" onclick={testJava}>Test</Button>
+			<Button class="mt-4" variant="secondary" onclick={testJava}>Test</Button>
 		{/if}
 	</div>
 </div>
 
-{#snippet javaPathInput(obj: ({ version: number; path: string }))}
+{#snippet javaPathInput(obj: { version: number; path: string })}
 	<div class="mt-4">
 		<Label class="mb-2 block text-zinc-50">Java {obj.version} Path</Label>
 		<div class="flex flex-row">

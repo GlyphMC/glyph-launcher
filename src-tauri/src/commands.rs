@@ -13,7 +13,7 @@ use crate::{
         self,
         structs::{Instance, InstanceConfig},
     },
-    java,
+    java::{self, structs::JavaConfig},
     resources::{self, versions::Version},
     AppState,
 };
@@ -58,13 +58,19 @@ pub async fn extract_java(
 
 #[tauri::command]
 pub fn test_java(paths: (PathBuf, PathBuf, PathBuf)) -> Result<(bool, bool, bool), ()> {
-	let results = java::test::test_java(paths).unwrap();
-	Ok(results)
+    let results = java::test::test_java(paths).unwrap();
+    Ok(results)
 }
 
 #[tauri::command]
 pub fn save_java_to_config(paths: (PathBuf, PathBuf, PathBuf)) {
     java::config::save_java_to_config(paths).unwrap();
+}
+
+#[tauri::command]
+pub fn get_java_from_config() -> Result<JavaConfig, ()> {
+    let java_config = java::config::get_java_from_config().unwrap();
+    Ok(java_config)
 }
 
 #[tauri::command]

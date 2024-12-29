@@ -4,7 +4,7 @@ use anyhow::{anyhow, Error, Result};
 use log::{debug, info};
 use reqwest::Client;
 use tauri::{async_runtime::spawn, AppHandle, Emitter, State};
-use tokio::{fs::File, io::AsyncWriteExt};
+use tokio::{fs::File, io::AsyncWriteExt, time::Instant};
 
 use crate::{
     config,
@@ -72,10 +72,10 @@ async fn download_java_version(
     let runtime_dir = config_dir.join("runtime");
     tokio::fs::create_dir_all(&runtime_dir).await?;
 
-    let (os, archive_type) = match env::consts::OS {
-        "windows" => ("windows", "zip"),
-        "macos" => ("macos", "tar.gz"),
-        "linux" => ("linux", "tar.gz"),
+    let os = match env::consts::OS {
+        "windows" => "windows",
+        "macos" => "macos",
+        "linux" => "linux",
         _ => return Err(anyhow!("Unsupported OS")),
     };
 
@@ -89,7 +89,7 @@ async fn download_java_version(
         ("java_version", version),
         ("os", os),
         ("arch", arch),
-        ("archive_type", archive_type),
+        ("archive_type", "zip"),
         ("java_package_type", "jdk"),
         ("javafx_bundled", "false"),
         ("crac_supported", "false"),
@@ -118,6 +118,7 @@ async fn download_java_version(
                     .content_length()
                     .ok_or(anyhow!("Failed to get zip size"))?;
                 let mut downloaded_size = 0;
+                let mut last_emit_time = Instant::now();
 
                 while let Ok(bytes_read) = zip_response.chunk().await {
                     let bytes = match bytes_read {
@@ -127,11 +128,23 @@ async fn download_java_version(
                     file.write_all(&bytes).await?;
                     downloaded_size += bytes.len() as u64;
 
-                    let percentage = (downloaded_size as f64 / total_size as f64) * 100.0;
-                    let progress = Progress { percentage };
+                    if last_emit_time.elapsed().as_secs() >= 1 {
+                        let percentage = (downloaded_size as f64 / total_size as f64) * 100.0;
+                        let progress = Progress { percentage };
 
-                    handle.emit(&format!("java-download-progress-{}", version), progress)?;
+                        handle.emit(&format!("java-download-progress-{}", version), progress)?;
+                        last_emit_time = Instant::now();
+                    }
+
+                    if downloaded_size == total_size {
+                        break;
+                    }
                 }
+
+                handle.emit(
+                    &format!("java-download-progress-{}", version),
+                    Progress { percentage: 100.0 },
+                )?;
 
                 info!(
                     "Downloaded Java {} to: {}",

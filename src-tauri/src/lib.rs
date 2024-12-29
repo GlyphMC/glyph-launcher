@@ -72,6 +72,7 @@ pub fn run() {
             commands::extract_java,
 			commands::test_java,
             commands::save_java_to_config,
+            commands::get_java_from_config,
             commands::get_instances,
             commands::get_instance,
             commands::create_instance,

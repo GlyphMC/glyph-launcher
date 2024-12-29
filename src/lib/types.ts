@@ -56,6 +56,12 @@ export type Instance = {
 	};
 };
 
+export type JavaConfig = {
+	java8Path: string;
+	java17Path: string;
+	java21Path: string;
+}
+
 export type MinecraftProfile = {
 	id: string;
 	name: string;

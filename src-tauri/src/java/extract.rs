@@ -1,15 +1,15 @@
-use std::{
-    fs::{self, File},
-    io::{self, BufReader},
-    path::{Path, PathBuf},
-};
+use std::path::{Component, PathBuf};
 
 use anyhow::{anyhow, Error, Ok, Result};
-use flate2::bufread::GzDecoder;
+use async_zip::tokio::read::seek::ZipFileReader;
 use log::info;
-use tar::Archive;
 use tauri::{async_runtime::spawn, AppHandle, Emitter};
-use zip::ZipArchive;
+use tokio::{
+    fs::{self, File},
+    io::{self, BufReader},
+    time::Instant,
+};
+use tokio_util::compat::FuturesAsyncReadCompatExt;
 
 use crate::{java::structs::Progress, Payload};
 
@@ -70,133 +70,76 @@ pub async fn extract_java(
 async fn extract_java_archive(
     handle: AppHandle,
     version: &str,
-    file_path: PathBuf,
-) -> Result<PathBuf, Error> {
-    let output_dir = file_path.with_extension("");
-
-    let extract_dir = if cfg!(windows) {
-        extract_zip(&handle, version, &file_path, &output_dir)?
-    } else if cfg!(unix) {
-        extract_tar_gz(&handle, version, &file_path, &output_dir)?
-    } else {
-        return Err(anyhow!("Unsupported platform").into());
-    };
-
-    Ok(extract_dir)
-}
-
-fn extract_zip(
-    handle: &AppHandle,
-    version: &str,
-    archive_path: &Path,
-    output_dir: &Path,
+    archive_path: PathBuf,
 ) -> Result<PathBuf, Error> {
     info!("Extracting ZIP archive: {}", archive_path.to_string_lossy());
 
-    let file = File::open(archive_path)?;
-    let mut archive = ZipArchive::new(file)?;
-    let mut total_size = 0;
+    let output_dir = archive_path.with_extension("");
 
-    for i in 0..archive.len() {
-        let file = archive.by_index(i)?;
-        total_size += file.size();
-    }
+    let file = File::open(&archive_path).await?;
+    let mut archive = ZipFileReader::with_tokio(BufReader::new(file)).await?;
+    let total_size: u64 = archive
+        .file()
+        .entries()
+        .iter()
+        .map(|e| e.compressed_size() as u64)
+        .sum();
 
-    let file = File::open(archive_path)?;
-    let mut archive = ZipArchive::new(file)?;
     let mut extracted_size = 0;
+    let mut last_emit_time = Instant::now();
+    let entries = archive.file().entries().to_vec();
+    let num_entries = entries.len();
 
-    for i in 0..archive.len() {
-        let mut file = archive.by_index(i)?;
-        let file_path = Path::new(file.name());
+    for index in 0..num_entries {
+        let entry = &entries[index];
+        let file_name = entry.filename().as_str()?;
+        let file_path = PathBuf::from(file_name);
 
-        let relative_path = file_path.iter().skip(1).collect::<PathBuf>();
+		let stripped_path = file_path
+			.components()
+			.skip(1)
+			.collect::<PathBuf>();
 
-        let output_path = output_dir.join(relative_path);
-        extracted_size += file.size();
+        if stripped_path
+            .components()
+            .any(|c| matches!(c, Component::ParentDir))
+        {
+            return Err(anyhow!("Invalid zip path detected"));
+        }
 
-        let percentage = (extracted_size as f64 / total_size as f64) * 100.0;
-        let progress = Progress { percentage };
+        let output_path = output_dir.join(stripped_path);
 
-        handle.emit(&format!("java-extract-progress-{}", version), progress)?;
-
-        if file.name().ends_with("/") {
-            fs::create_dir_all(output_path)?;
+        if entry.dir()? {
+            fs::create_dir_all(&output_path).await?;
         } else {
             if let Some(parent) = output_path.parent() {
-                fs::create_dir_all(parent)?;
+                fs::create_dir_all(parent).await?;
             }
-            let mut output_file = File::create(&output_path)?;
-            io::copy(&mut file, &mut output_file)?;
+            let mut output_file = File::create(&output_path).await?;
+
+            let mut entry_reader = archive.reader_with_entry(index).await?.compat();
+            io::copy(&mut entry_reader, &mut output_file).await?;
+        }
+
+        extracted_size += entry.uncompressed_size() as u64;
+
+        if last_emit_time.elapsed().as_secs() >= 1 {
+            let percentage = (extracted_size as f64 / total_size as f64) * 100.0;
+            let progress = Progress { percentage };
+
+            handle.emit(&format!("java-extract-progress-{}", version), progress)?;
+            last_emit_time = Instant::now();
         }
     }
 
-    fs::remove_file(archive_path)?;
+    handle.emit(
+        &format!("java-extract-progress-{}", version),
+        Progress { percentage: 100.0 },
+    )?;
+
+    fs::remove_file(&archive_path).await?;
 
     info!("Extracted ZIP archive to: {}", output_dir.to_string_lossy());
 
     Ok(output_dir.to_path_buf())
-}
-
-fn extract_tar_gz(
-    handle: &AppHandle,
-    version: &str,
-    archive_path: &Path,
-    output_dir: &Path,
-) -> Result<PathBuf, Error> {
-    info!(
-        "Extracting TAR.GZ archive: {}",
-        archive_path.to_string_lossy()
-    );
-
-    let file = File::open(archive_path)?;
-    let buf_reader = BufReader::new(file);
-    let decompressed = GzDecoder::new(buf_reader);
-    let mut archive = Archive::new(decompressed);
-
-    let mut total_size = 0;
-    for entry in archive.entries()? {
-        let entry = entry?;
-        total_size += entry.header().size()?;
-    }
-
-    let file = File::open(archive_path)?;
-    let buf_reader = BufReader::new(file);
-    let decompressed = GzDecoder::new(buf_reader);
-    let mut archive = Archive::new(decompressed);
-    let mut extracted_size = 0;
-
-    for entry in archive.entries()? {
-        let mut entry = entry?;
-        let path = entry.path()?;
-        let file_size = entry.header().size()?;
-        extracted_size += file_size;
-
-        let relative_path = path.iter().skip(1).collect::<PathBuf>();
-
-        let output_path = output_dir.join(relative_path);
-        let percentage = (extracted_size as f64 / total_size as f64) * 100.0;
-        let progress = Progress { percentage };
-
-        handle.emit(&format!("java-extract-progress-{}", version), progress)?;
-
-        entry.unpack(&output_path)?;
-    }
-
-    let mut final_output_dir = output_dir.to_path_buf();
-    if let Some(output_str) = output_dir.to_str() {
-        if output_str.ends_with(".tar") {
-            final_output_dir = PathBuf::from(&output_str[..output_str.len() - 4]);
-            fs::rename(output_dir, &final_output_dir)?;
-        }
-    }
-
-    fs::remove_file(archive_path)?;
-
-    info!(
-        "Extracted TAR.GZ archive to: {}",
-        final_output_dir.to_string_lossy()
-    );
-
-    Ok(final_output_dir.to_path_buf())
 }

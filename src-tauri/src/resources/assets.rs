@@ -61,9 +61,7 @@ impl AssetManager {
         let total_assets = asset_index.objects.len();
         info!("Downloading {} assets", total_assets);
 
-        for (asset_name, asset_object) in asset_index.objects {
-            // info!("Downloading asset: {}", asset_name);
-
+        for (_asset_name, asset_object) in asset_index.objects {
             let hash = &asset_object.hash;
             let subdir = &hash[..2];
             let asset_path = self.objects_dir.join(subdir).join(hash);
