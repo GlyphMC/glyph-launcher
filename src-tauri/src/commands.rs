@@ -57,9 +57,9 @@ pub async fn extract_java(
 }
 
 #[tauri::command]
-pub fn test_java(paths: (PathBuf, PathBuf, PathBuf)) -> Result<Vec<String>, ()> {
-	let outputs = java::test::test_java(paths).unwrap();
-	Ok(outputs)
+pub fn test_java(paths: (PathBuf, PathBuf, PathBuf)) -> Result<(bool, bool, bool), ()> {
+	let results = java::test::test_java(paths).unwrap();
+	Ok(results)
 }
 
 #[tauri::command]

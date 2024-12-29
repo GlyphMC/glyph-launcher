@@ -8,7 +8,7 @@
 	import { Checkbox } from "$lib/components/ui/checkbox";
 	import { Label } from "$lib/components/ui/label";
 	import { Input } from "$lib/components/ui/input";
-	import type { ExtractState, DownloadState, JavaPaths, ProgressEvent, JavaProgress, ManualJava } from "$lib/types";
+	import type { ExtractState, DownloadState, JavaPaths, ProgressEvent, JavaProgress, ManualJava, ManualJavaTestResults } from "$lib/types";
 	import { Button, buttonVariants } from "$lib/components/ui/button";
 	import { resetMode, setMode } from "mode-watcher";
 	import * as Card from "$lib/components/ui/card";
@@ -29,20 +29,19 @@
 	});
 
 	let showManualJavaSetup = $state(false);
-	let showManualJavaTestPopup = $state(false);
 	let manualJava8 = $state<ManualJava>({ version: 8, path: "" });
 	let manualJava17 = $state<ManualJava>({ version: 17, path: "" });
 	let manualJava21 = $state<ManualJava>({ version: 21, path: "" });
+	let showManualJavaTestPopup = $state(false);
+	let manualJavaTestResults = $state<ManualJavaTestResults>();
 
 	function testJava() {
-		invoke("test_java", {
-			paths: [
-				manualJava8.path,
-				manualJava17.path,
-				manualJava21.path
-			]
+		invoke<ManualJavaTestResults>("test_java", {
+			paths: [manualJava8.path, manualJava17.path, manualJava21.path]
 		}).then((data) => {
-			console.log(data);
+			let [java8, java17, java21] = data;
+			showManualJavaTestPopup = true;
+			manualJavaTestResults = [java8, java17, java21];
 		});
 	}
 
@@ -72,7 +71,7 @@
 		});
 	}
 
-	async function saveJavaToConfig() {
+	async function saveJavaToConfig(paths: string[]) {
 		invoke("save_java_to_config", { paths }).then(() => {
 			console.log("Java saved to config successfully");
 		});
@@ -141,7 +140,7 @@
 					<Button
 						onclick={() => {
 							resetStates();
-							saveJavaToConfig();
+							saveJavaToConfig(paths);
 						}}
 						variant="outline"
 						disabled={extractState === "extracting"}>
@@ -160,8 +159,29 @@
 				<h2 class="text-xl font-bold text-zinc-50">Test Java Setup</h2>
 			</Card.Header>
 			<Card.Content>
-
+				{#if manualJavaTestResults}
+					{#each manualJavaTestResults as result, index}
+						<p class="text-zinc-50">
+							Java {[8, 17, 21][index]}:
+							{#if result}
+								<span class="text-green-500">Success</span>
+							{:else}
+								<span class="text-red-500">Failed</span>
+							{/if}
+						</p>
+					{/each}
+				{/if}
 			</Card.Content>
+			<Card.Footer class="flex justify-center">
+				<Button
+					onclick={() => {
+						showManualJavaTestPopup = false;
+						saveJavaToConfig([manualJava8.path, manualJava17.path, manualJava21.path]);
+					}}
+					variant="outline">
+					Close
+				</Button>
+			</Card.Footer>
 		</Card.Root>
 	</div>
 {/if}
@@ -233,7 +253,7 @@
 	</div>
 </div>
 
-{#snippet javaPathInput(obj: { version: number; path: string })}
+{#snippet javaPathInput(obj: ({ version: number; path: string }))}
 	<div class="mt-4">
 		<Label class="mb-2 block text-zinc-50">Java {obj.version} Path</Label>
 		<div class="flex flex-row">
@@ -245,14 +265,14 @@
 					e.preventDefault();
 
 					let isWindows = platform() === "windows";
-					let java = await open({
+					let javaPath = await open({
 						title: "Select Java",
 						multiple: false,
 						filters: isWindows ? [{ name: "Java", extensions: ["exe"] }] : []
 					});
-					if (java) {
-						console.log(java);
-						obj.path = java;
+
+					if (javaPath) {
+						obj.path = javaPath;
 					}
 				}}>
 				...

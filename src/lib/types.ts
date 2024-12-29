@@ -19,9 +19,11 @@ export type JavaProgress = {
 };
 
 export type ManualJava = {
-	version: number;
+	version: 8 | 17 | 21;
 	path: string;
-}
+};
+
+export type ManualJavaTestResults = [boolean, boolean, boolean];
 
 export type ProgressEvent = {
 	percentage: number;
@@ -29,7 +31,7 @@ export type ProgressEvent = {
 
 export type InstanceConfig = {
 	instances: Instance[];
-}
+};
 
 export type Instance = {
 	name: string;
@@ -47,7 +49,7 @@ export type Instance = {
 		args: string[];
 	};
 	settings: {
-		hasLaunched : boolean;
+		hasLaunched: boolean;
 		richPresence: boolean;
 		maximised: boolean;
 		memory: number;
@@ -83,6 +85,6 @@ export type Version = {
 	releaseTime: string;
 	sha1: string;
 	complianceLevel: number;
-}
+};
 
 export type Modloader = "Vanilla" | "Forge" | "Neoforge" | "Fabric" | "";
