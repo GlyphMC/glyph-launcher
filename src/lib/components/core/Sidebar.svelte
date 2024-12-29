@@ -70,6 +70,11 @@
 		await writeText(loginCode).then(() => open(verificationUri));
 	}
 
+	async function logout() {
+		console.log("logout");
+
+	}
+
 	fetchInstances();
 	getMinecraftProfiles();
 </script>
@@ -94,9 +99,9 @@
 <Sidebar.Root collapsible="icon">
 	<div class="flex h-screen flex-col gap-y-4 p-4">
 		<Sidebar.Header class="text-zinc-100 hover:text-zinc-50">
-			<a href="/" class="font-bold">Glyph Launcher</a>
+			<a href="/#/" class="font-bold">Glyph Launcher</a>
 			<Input type="text" placeholder="Search instances..." bind:value={searchInput} />
-			<Button variant="outline" onclick={() => goto("/instance/new")}>Add instance</Button>
+			<Button variant="outline" onclick={() => goto("/#/instance/new")}>Add instance</Button>
 		</Sidebar.Header>
 
 		<Sidebar.Content class="mx-2 mt-0">
@@ -104,7 +109,7 @@
 				<div class="p-4">
 					<h4 class="mb-4 text-sm font-bold leading-none">Instances</h4>
 					{#each filteredInstances as instance}
-						<a href="/instance/{instance.slug}">
+						<a href="/#/instance/{instance.slug}">
 							<div>
 								<p class="text-sm">{instance.name}</p>
 							</div>
@@ -135,13 +140,13 @@
 								{/snippet}
 							</DropdownMenu.Trigger>
 							<DropdownMenu.Content side="top" class="w-[--bits-dropdown-menu-anchor-width]">
-								<DropdownMenu.Item onclick={() => goto("/accounts")}>
+								<DropdownMenu.Item onclick={() => goto("/#/accounts")}>
 									<span>Accounts</span>
 								</DropdownMenu.Item>
-								<DropdownMenu.Item onclick={() => goto("/settings")}>
+								<DropdownMenu.Item onclick={() => goto("/#/settings")}>
 									<span>Settings</span>
 								</DropdownMenu.Item>
-								<DropdownMenu.Item>
+								<DropdownMenu.Item onclick={logout}>
 									<span>Logout</span>
 								</DropdownMenu.Item>
 							</DropdownMenu.Content>

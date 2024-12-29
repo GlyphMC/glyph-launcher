@@ -29,7 +29,10 @@ struct LoginDetails<'a> {
     uri: &'a str,
 }
 
-pub async fn login(state: &State<'_, AppState>, handle: AppHandle) -> Result<MinecraftProfileResponse, Error> {
+pub async fn login(
+    state: &State<'_, AppState>,
+    handle: AppHandle,
+) -> Result<MinecraftProfileResponse, Error> {
     let client = state.client.lock().await;
 
     let device_code_response = device_response(&client).await?;

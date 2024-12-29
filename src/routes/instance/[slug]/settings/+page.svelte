@@ -23,7 +23,7 @@
 		console.log("Deleting instance " + data.slug);
 		invoke("delete_instance", { slug: data.slug }).then(() => {
 			console.log("Instance deleted");
-			goto("/");
+			goto("/#/");
 		});
 	}
 

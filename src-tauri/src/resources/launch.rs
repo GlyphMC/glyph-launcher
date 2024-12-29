@@ -1,4 +1,4 @@
-use std::{fs, path::PathBuf, process::Command};
+use std::{path::PathBuf, process::Command};
 
 use anyhow::{anyhow, Error, Result};
 use log::info;
@@ -85,8 +85,8 @@ fn launch_game(
         "msa",
         "--versionType",
         "release",
-		"--gameDir",
-		&minecraft_dir.to_str().unwrap(),
+        "--gameDir",
+        &minecraft_dir.to_str().unwrap(),
     ];
 
     let mut command = Command::new(java_path);
@@ -95,6 +95,8 @@ fn launch_game(
         .arg(classpath)
         .arg(main_class)
         .args(&game_args);
+
+    println!("{:#?}", command);
 
     command
         .spawn()

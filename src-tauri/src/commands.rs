@@ -57,6 +57,12 @@ pub async fn extract_java(
 }
 
 #[tauri::command]
+pub fn test_java(paths: (PathBuf, PathBuf, PathBuf)) -> Result<Vec<String>, ()> {
+	let outputs = java::test::test_java(paths).unwrap();
+	Ok(outputs)
+}
+
+#[tauri::command]
 pub fn save_java_to_config(paths: (PathBuf, PathBuf, PathBuf)) {
     java::config::save_java_to_config(paths).unwrap();
 }
@@ -89,25 +95,22 @@ pub async fn create_instance(
 
 #[tauri::command]
 pub fn delete_instance(handle: AppHandle, slug: String) -> Result<(), ()> {
-	if let Err(e) = instances::instance::delete_instance(handle, slug) {
-		eprintln!("Error deleting instance: {:?}", e);
-		return Err(());
-	}
+    if let Err(e) = instances::instance::delete_instance(handle, slug) {
+        eprintln!("Error deleting instance: {:?}", e);
+        return Err(());
+    }
 
-	Ok(())
+    Ok(())
 }
 
 #[tauri::command]
-pub async fn launch_instance(
-	state: State<'_, AppState>,
-	slug: String,
-) -> Result<(), ()> {
-	if let Err(e) = resources::launch::launch(state, slug).await {
-		eprintln!("Error launching instance: {:?}", e);
-		return Err(());
-	}
+pub async fn launch_instance(state: State<'_, AppState>, slug: String) -> Result<(), ()> {
+    if let Err(e) = resources::launch::launch(state, slug).await {
+        eprintln!("Error launching instance: {:?}", e);
+        return Err(());
+    }
 
-	Ok(())
+    Ok(())
 }
 
 #[tauri::command]

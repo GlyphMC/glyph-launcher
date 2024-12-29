@@ -18,6 +18,11 @@ export type JavaProgress = {
 	extract: { [key: number]: number };
 };
 
+export type ManualJava = {
+	version: number;
+	path: string;
+}
+
 export type ProgressEvent = {
 	percentage: number;
 };

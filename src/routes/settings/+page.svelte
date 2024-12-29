@@ -2,12 +2,13 @@
 	import { invoke } from "@tauri-apps/api/core";
 	import { listen } from "@tauri-apps/api/event";
 	import { platform } from "@tauri-apps/plugin-os";
+	import { open } from "@tauri-apps/plugin-dialog";
 	import { onMount } from "svelte";
 	import ProgressBars from "$lib/components/core/ProgressBars.svelte";
 	import { Checkbox } from "$lib/components/ui/checkbox";
 	import { Label } from "$lib/components/ui/label";
 	import { Input } from "$lib/components/ui/input";
-	import type { ExtractState, DownloadState, JavaPaths, ProgressEvent, JavaProgress } from "$lib/types";
+	import type { ExtractState, DownloadState, JavaPaths, ProgressEvent, JavaProgress, ManualJava } from "$lib/types";
 	import { Button, buttonVariants } from "$lib/components/ui/button";
 	import { resetMode, setMode } from "mode-watcher";
 	import * as Card from "$lib/components/ui/card";
@@ -26,6 +27,24 @@
 		download: { 8: 0, 17: 0, 21: 0 },
 		extract: { 8: 0, 17: 0, 21: 0 }
 	});
+
+	let showManualJavaSetup = $state(false);
+	let showManualJavaTestPopup = $state(false);
+	let manualJava8 = $state<ManualJava>({ version: 8, path: "" });
+	let manualJava17 = $state<ManualJava>({ version: 17, path: "" });
+	let manualJava21 = $state<ManualJava>({ version: 21, path: "" });
+
+	function testJava() {
+		invoke("test_java", {
+			paths: [
+				manualJava8.path,
+				manualJava17.path,
+				manualJava21.path
+			]
+		}).then((data) => {
+			console.log(data);
+		});
+	}
 
 	onMount(() => {
 		let platformName = platform();
@@ -134,6 +153,19 @@
 	</div>
 {/if}
 
+{#if showManualJavaTestPopup}
+	<div class="fixed inset-0 z-50 flex items-center justify-center bg-zinc-900 bg-opacity-50 font-display backdrop-blur-md">
+		<Card.Root class="relative w-full max-w-sm rounded-lg bg-zinc-900 p-2 text-center shadow-lg">
+			<Card.Header>
+				<h2 class="text-xl font-bold text-zinc-50">Test Java Setup</h2>
+			</Card.Header>
+			<Card.Content>
+
+			</Card.Content>
+		</Card.Root>
+	</div>
+{/if}
+
 <div class="w-full overflow-hidden font-display">
 	<p class="px-10 pt-10 text-3xl font-bold text-zinc-50">Settings</p>
 
@@ -185,18 +217,46 @@
 			<Button
 				onclick={() => {
 					resetStates();
+					showManualJavaSetup = true;
 				}}
 				variant="destructive">
 				Set up Java manually
 			</Button>
 		</div>
-		<!-- <div class="mt-4">
-			<label for="java-path" class="block text-zinc-50">Java Path</label>
-			<input id="java-path" type="text" class="form-input mt-1 block w-full text-zinc-900" placeholder="Enter Java path" />
-		</div>
-		<div class="mt-4">
-			<label for="java-args" class="block text-zinc-50">Java Arguments</label>
-			<input id="java-args" type="text" class="form-input mt-1 block w-full text-zinc-900" placeholder="Enter Java arguments" />
-		</div> -->
+
+		{#if showManualJavaSetup}
+			{@render javaPathInput(manualJava8)}
+			{@render javaPathInput(manualJava17)}
+			{@render javaPathInput(manualJava21)}
+			<Button class="mt-4" variant="destructive" onclick={testJava}>Test</Button>
+		{/if}
 	</div>
 </div>
+
+{#snippet javaPathInput(obj: { version: number; path: string })}
+	<div class="mt-4">
+		<Label class="mb-2 block text-zinc-50">Java {obj.version} Path</Label>
+		<div class="flex flex-row">
+			<Input type="text" placeholder="/usr/lib/jvm" bind:value={obj.path} />
+			<Button
+				class="ml-2 h-8"
+				variant="outline"
+				onclick={async (e) => {
+					e.preventDefault();
+
+					let isWindows = platform() === "windows";
+					let java = await open({
+						title: "Select Java",
+						multiple: false,
+						filters: isWindows ? [{ name: "Java", extensions: ["exe"] }] : []
+					});
+					if (java) {
+						console.log(java);
+						obj.path = java;
+					}
+				}}>
+				...
+			</Button>
+		</div>
+	</div>
+{/snippet}

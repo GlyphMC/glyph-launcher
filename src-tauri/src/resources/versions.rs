@@ -51,5 +51,5 @@ pub async fn get_versions(state: State<'_, AppState>) -> Result<Vec<Version>, Er
         time_b.cmp(&time_a)
     });
 
-	Ok(versions)
+    Ok(versions)
 }

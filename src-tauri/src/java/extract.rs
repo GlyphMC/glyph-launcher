@@ -19,13 +19,12 @@ pub async fn extract_java(
 ) -> Result<(PathBuf, PathBuf, PathBuf), Error> {
     let (java_8_archive_path, java_17_archive_path, java_21_archive_path) = paths;
 
-    handle
-        .emit(
-            "extract-started",
-            Payload {
-                message: "Extract started",
-            },
-        )?;
+    handle.emit(
+        "extract-started",
+        Payload {
+            message: "Extract started",
+        },
+    )?;
 
     let handle_8 = {
         let handle = handle.clone();
@@ -58,13 +57,12 @@ pub async fn extract_java(
     let output_dir_17 = handle_17.await??;
     let output_dir_21 = handle_21.await??;
 
-    handle
-        .emit(
-            "extract-finished",
-            Payload {
-                message: "Extract finished",
-            },
-        )?;
+    handle.emit(
+        "extract-finished",
+        Payload {
+            message: "Extract finished",
+        },
+    )?;
 
     Ok((output_dir_8, output_dir_17, output_dir_21))
 }
@@ -120,8 +118,7 @@ fn extract_zip(
         let percentage = (extracted_size as f64 / total_size as f64) * 100.0;
         let progress = Progress { percentage };
 
-        handle
-            .emit(&format!("java-extract-progress-{}", version), progress)?;
+        handle.emit(&format!("java-extract-progress-{}", version), progress)?;
 
         if file.name().ends_with("/") {
             fs::create_dir_all(output_path)?;
@@ -181,8 +178,7 @@ fn extract_tar_gz(
         let percentage = (extracted_size as f64 / total_size as f64) * 100.0;
         let progress = Progress { percentage };
 
-        handle
-            .emit(&format!("java-extract-progress-{}", version), progress)?;
+        handle.emit(&format!("java-extract-progress-{}", version), progress)?;
 
         entry.unpack(&output_path)?;
     }

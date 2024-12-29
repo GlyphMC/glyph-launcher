@@ -133,13 +133,16 @@ impl AssetManager {
                 .get(&version_manifest.downloads.client.url)
                 .send()
                 .await?;
-			let mut file = File::create(&jar_path).await?;
-			while let Some(chunk) = response.chunk().await? {
-				file.write_all(&chunk).await?;
-			}
+            let mut file = File::create(&jar_path).await?;
+            while let Some(chunk) = response.chunk().await? {
+                file.write_all(&chunk).await?;
+            }
         } else {
-			info!("Minecraft version JAR already downloaded: {}", version_manifest.id);
-		}
+            info!(
+                "Minecraft version JAR already downloaded: {}",
+                version_manifest.id
+            );
+        }
 
         Ok(())
     }

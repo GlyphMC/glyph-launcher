@@ -71,7 +71,7 @@ pub struct AssetIndex {
     pub id: String,
     pub sha1: String,
     pub size: u64,
-	#[serde(rename = "totalSize")]
+    #[serde(rename = "totalSize")]
     pub total_size: u64,
     pub url: String,
 }
@@ -94,7 +94,7 @@ pub struct Download {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct JavaVersion {
     pub component: String,
-	#[serde(rename = "majorVersion")]
+    #[serde(rename = "majorVersion")]
     pub major_version: u32,
 }
 
@@ -142,35 +142,38 @@ pub struct LoggingFile {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct VersionManifest {
     pub arguments: Arguments,
-	#[serde(rename = "assetIndex")]
+    #[serde(rename = "assetIndex")]
     pub asset_index: AssetIndex,
     pub assets: String,
-	#[serde(rename = "complianceLevel")]
+    #[serde(rename = "complianceLevel")]
     pub compliance_level: u32,
     pub downloads: Downloads,
     pub id: String,
-	#[serde(rename = "javaVersion")]
+    #[serde(rename = "javaVersion")]
     pub java_version: JavaVersion,
     pub libraries: Vec<Library>,
     pub logging: Logging,
-	#[serde(rename = "mainClass")]
+    #[serde(rename = "mainClass")]
     pub main_class: String,
-	#[serde(rename = "minimumLauncherVersion")]
+    #[serde(rename = "minimumLauncherVersion")]
     pub minimum_launcher_version: u32,
-	#[serde(rename = "releaseTime")]
+    #[serde(rename = "releaseTime")]
     pub release_time: String,
     pub time: String,
     pub r#type: String,
 }
 
-pub async fn get_version_manifest(state: State<'_, AppState>, url: &String) -> Result<VersionManifest, Error> {
-	let client = state.client.lock().await;
-	let response = client
-		.get(url)
-		.send()
-		.await?
-		.json::<VersionManifest>()
-		.await?;
+pub async fn get_version_manifest(
+    state: State<'_, AppState>,
+    url: &String,
+) -> Result<VersionManifest, Error> {
+    let client = state.client.lock().await;
+    let response = client
+        .get(url)
+        .send()
+        .await?
+        .json::<VersionManifest>()
+        .await?;
 
-	Ok(response)
+    Ok(response)
 }

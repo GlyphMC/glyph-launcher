@@ -8,8 +8,8 @@ use crate::{config, instances::structs::Java, resources::version, AppState, Payl
 use super::structs::{Instance, InstanceConfig};
 
 pub fn get_instances_path() -> Result<PathBuf, Error> {
-	let config_dir = config::get_config_dir()?;
-	Ok(config_dir.join("instances"))
+    let config_dir = config::get_config_dir()?;
+    Ok(config_dir.join("instances"))
 }
 
 fn get_instance_config_path() -> Result<PathBuf, Error> {
@@ -30,8 +30,8 @@ pub fn create_default_instances_file() -> Result<(), Error> {
     fs::write(instance_config_path, instances_data)
         .map_err(|e| anyhow!("Failed to write instances file: {}", e))?;
 
-	let instances_path = get_instances_path()?;
-	fs::create_dir_all(instances_path)?;
+    let instances_path = get_instances_path()?;
+    fs::create_dir_all(instances_path)?;
 
     Ok(())
 }
@@ -121,13 +121,16 @@ pub fn delete_instance(handle: AppHandle, slug: String) -> Result<(), Error> {
     let instances_data = serde_json::to_string_pretty(&new_instance_config).unwrap();
     fs::write(instances_config_path, instances_data)?;
 
-	let instances_path = get_instances_path()?;
-	let instance_dir = instances_path.join(&slug);
-	fs::remove_dir_all(instance_dir)?;
+    let instances_path = get_instances_path()?;
+    let instance_dir = instances_path.join(&slug);
+    fs::remove_dir_all(instance_dir)?;
 
-	handle.emit("instance-list-updated", Payload {
-		message: "Instance deleted"
-	})?;
+    handle.emit(
+        "instance-list-updated",
+        Payload {
+            message: "Instance deleted",
+        },
+    )?;
 
-	Ok(())
+    Ok(())
 }

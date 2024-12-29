@@ -21,17 +21,17 @@ pub struct Progress {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct JavaConfig {
-	pub java_8_path: String,
-	pub java_17_path: String,
-	pub java_21_path: String,
+    pub java_8_path: String,
+    pub java_17_path: String,
+    pub java_21_path: String,
 }
 
 impl JavaConfig {
-	pub fn default() -> Self {
-		Self {
-			java_8_path: String::new(),
-			java_17_path: String::new(),
-			java_21_path: String::new(),
-		}
-	}
+    pub fn default() -> Self {
+        Self {
+            java_8_path: String::new(),
+            java_17_path: String::new(),
+            java_21_path: String::new(),
+        }
+    }
 }

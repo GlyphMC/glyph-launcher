@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct InstanceConfig {
-	pub instances: Vec<Instance>,
+    pub instances: Vec<Instance>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -11,14 +11,14 @@ pub struct Instance {
     pub name: String,
     pub game: Game,
     pub java: Java,
-	pub settings: Settings
+    pub settings: Settings,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Game {
     pub version: String,
     modloader: Modloader,
-	pub url: String,
+    pub url: String,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -37,7 +37,7 @@ pub struct Java {
 #[serde(rename_all = "camelCase")]
 pub struct Settings {
     pub has_launched: bool,
-	rich_presence: bool,
+    rich_presence: bool,
     maximised: bool,
     memory: u64,
 }

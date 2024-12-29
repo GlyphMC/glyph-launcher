@@ -20,7 +20,7 @@ pub fn save_java_to_config(paths: (PathBuf, PathBuf, PathBuf)) -> Result<(), Err
         },
     };
 
-	config::save_config(&new_config)?;
+    config::save_config(&new_config)?;
 
     Ok(())
 }
