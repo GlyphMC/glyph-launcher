@@ -58,13 +58,16 @@
 			},
 			java: {
 				path: "",
-				args: []
+				args: [],
+				version: ""
 			},
 			settings: {
 				hasLaunched: false,
 				richPresence: discordRichPresence,
 				maximised: startMaximized,
-				memory: parseInt(ram.join(""))
+				memory: parseInt(ram.join("")),
+				windowWidth: 854,
+				windowHeight: 480
 			}
 		}
 		await invoke("create_instance", { instance }).then(() => {

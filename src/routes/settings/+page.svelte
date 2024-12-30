@@ -81,13 +81,13 @@
 		});
 	}
 
-	async function saveJavaToConfig(paths: string[]) {
+	function saveJavaToConfig(paths: string[]) {
 		invoke("save_java_to_config", { paths }).then(() => {
 			console.log("Java saved to config successfully");
 		});
 	}
 
-	async function getJavaFromConfig() {
+	function getJavaFromConfig() {
 		invoke<JavaConfig>("get_java_from_config").then((data) => {
 			let { java8Path, java17Path, java21Path } = data;
 			manualJava8.path = java8Path;

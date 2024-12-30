@@ -100,6 +100,16 @@ pub async fn create_instance(
 }
 
 #[tauri::command]
+pub fn update_instance(instance: Instance) -> Result<(), ()> {
+	if let Err(e) = instances::instance::update_instance(instance) {
+		eprintln!("Error updating instance: {:?}", e);
+		return Err(());
+	}
+
+	Ok(())
+}
+
+#[tauri::command]
 pub fn delete_instance(handle: AppHandle, slug: String) -> Result<(), ()> {
     if let Err(e) = instances::instance::delete_instance(handle, slug) {
         eprintln!("Error deleting instance: {:?}", e);

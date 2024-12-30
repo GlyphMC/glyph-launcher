@@ -47,12 +47,15 @@ export type Instance = {
 	java: {
 		path: string;
 		args: string[];
+		version: string;
 	};
 	settings: {
 		hasLaunched: boolean;
 		richPresence: boolean;
 		maximised: boolean;
 		memory: number;
+		windowWidth: number;
+		windowHeight: number;
 	};
 };
 
@@ -60,7 +63,7 @@ export type JavaConfig = {
 	java8Path: string;
 	java17Path: string;
 	java21Path: string;
-}
+};
 
 export type MinecraftProfile = {
 	id: string;
