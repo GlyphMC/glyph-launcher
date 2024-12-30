@@ -149,7 +149,9 @@ pub fn delete_instance(handle: AppHandle, slug: String) -> Result<(), Error> {
 
     let instances_path = get_instances_path()?;
     let instance_dir = instances_path.join(&slug);
-    fs::remove_dir_all(instance_dir)?;
+    if instance_dir.exists() {
+		fs::remove_dir_all(instance_dir)?;
+	}
 
     handle.emit(
         "instance-list-updated",
