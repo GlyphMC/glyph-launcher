@@ -2,8 +2,9 @@
 	import { Checkbox } from "$lib/components/ui/checkbox";
 	import { Label } from "$lib/components/ui/label";
 	import { Button } from "$lib/components/ui/button";
-	import * as Select from "$lib/components/ui/select";
 	import { Input } from "$lib/components/ui/input";
+	import { Textarea } from "$lib/components/ui/textarea";
+	import * as Select from "$lib/components/ui/select";
 	import type { Instance, JavaConfig } from "$lib/types";
 	import type { PageData } from "../$types";
 	import { invoke } from "@tauri-apps/api/core";
@@ -27,36 +28,37 @@
 				}))
 			: []
 	);
-	const triggerContent = $derived(simpleJavaConfig.find((java) => java.version === selectedJavaVersion)?.formattedVersion || "Select Java Version");
+	const triggerContent = $derived(selectedJavaVersion ? `Java ${selectedJavaVersion.replace("java", "")}` : "Select Java Version");
+	let javaArguments = $state("");
 
-	function getInstance() {
-		invoke<Instance>("get_instance", { slug: data.slug }).then((data) => {
+	async function getInstance() {
+		await invoke<Instance>("get_instance", { slug: data.slug }).then((data) => {
 			instance = data;
 
 			startMaximised = data.settings.maximised;
 			windowWidth = data.settings.windowWidth;
 			windowHeight = data.settings.windowHeight;
-			selectedJavaVersion = data.java.version;
+			selectedJavaVersion = `java${data.java.version}`;
 		});
 	}
 
-	function deleteInstance() {
+	async function deleteInstance() {
 		console.log("Deleting instance " + data.slug);
-		invoke("delete_instance", { slug: data.slug }).then(() => {
+		await invoke("delete_instance", { slug: data.slug }).then(() => {
 			console.log("Instance deleted");
 			goto("/#/");
 		});
 	}
 
-	function getJavaFromConfig() {
-		invoke<JavaConfig>("get_java_from_config").then((data) => {
+	async function getJavaFromConfig() {
+		await invoke<JavaConfig>("get_java_from_config").then((data) => {
 			javaConfig = data;
 		});
 	}
 
-	onMount(() => {
-		getInstance();
-		getJavaFromConfig();
+	onMount(async () => {
+		await getInstance();
+		await getJavaFromConfig();
 	});
 
 	async function saveInstanceSettings() {
@@ -66,6 +68,8 @@
 		instance.settings.windowWidth = windowWidth;
 		instance.settings.windowHeight = windowHeight;
 		instance.java.version = selectedJavaVersion.replace("java", "");
+		instance.java.path = simpleJavaConfig.find((java) => java.version === selectedJavaVersion)?.path || "";
+		instance.java.args = javaArguments.split(" ");
 
 		await invoke("update_instance", { instance }).then(() => {
 			console.log("Instance updated");
@@ -83,33 +87,39 @@
 			</div>
 		</div>
 		<div class="mt-4 flex space-x-4">
-				<div>
-					<Label class="mb-2 block text-zinc-50">Window Width</Label>
-					<Input type="number" bind:value={windowWidth} onchange={saveInstanceSettings} />
-				</div>
-				<div>
-					<Label class="mb-2 block text-zinc-50">Window Height</Label>
-					<Input type="number" bind:value={windowHeight} onchange={saveInstanceSettings}/>
-				</div>
+			<div>
+				<Label class="mb-2 block text-zinc-50">Window Width</Label>
+				<Input type="number" bind:value={windowWidth} onchange={saveInstanceSettings} />
 			</div>
+			<div>
+				<Label class="mb-2 block text-zinc-50">Window Height</Label>
+				<Input type="number" bind:value={windowHeight} onchange={saveInstanceSettings} />
+			</div>
+		</div>
 	</div>
-	<div class="mt-4">
-		<h2 class="text-lg font-semibold text-zinc-50">Java</h2>
-		<Select.Root type="single" name="javaVersion" bind:value={selectedJavaVersion} onValueChange={saveInstanceSettings}>
-			<Select.Trigger class="w-[180px]">
-				{triggerContent}
-			</Select.Trigger>
-			<Select.Content>
-				<Select.Group>
-					<Select.GroupHeading>Java Versions</Select.GroupHeading>
-					{#each simpleJavaConfig as java}
-						<Select.Item value={java.version} label={java.formattedVersion}>
-							{java.formattedVersion}
-						</Select.Item>
-					{/each}
-				</Select.Group>
-			</Select.Content>
-		</Select.Root>
+	<div class="mt-4 flex flex-col">
+		<div>
+			<h2 class="text-lg font-semibold text-zinc-50">Java</h2>
+			<Select.Root type="single" name="javaVersion" bind:value={selectedJavaVersion} onValueChange={saveInstanceSettings}>
+				<Select.Trigger class="mt-2 w-[180px]">
+					{triggerContent}
+				</Select.Trigger>
+				<Select.Content>
+					<Select.Group>
+						<Select.GroupHeading>Java Versions</Select.GroupHeading>
+						{#each simpleJavaConfig as java}
+							<Select.Item value={java.version} label={java.formattedVersion}>
+								{java.formattedVersion}
+							</Select.Item>
+						{/each}
+					</Select.Group>
+				</Select.Content>
+			</Select.Root>
+		</div>
+		<div class="mt-4">
+			<Label class="mb-2 block text-zinc-50">Java Arguments</Label>
+			<Textarea class="resize-none" placeholder="Enter Java Arguments here" bind:value={javaArguments} onchange={saveInstanceSettings} />
+		</div>
 	</div>
 	<div class="mt-4">
 		<h2 class="text-lg font-semibold text-zinc-50">Advanced</h2>

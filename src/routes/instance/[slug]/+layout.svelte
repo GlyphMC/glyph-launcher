@@ -13,18 +13,18 @@
 	async function fetchTimePlayed() {}
 
 	async function launchInstance() {
-		invoke("launch_instance", { slug: data.slug });
+		await invoke("launch_instance", { slug: data.slug });
 	}
 
-	function getInstance() {
-		invoke<Instance>("get_instance", { slug: data.slug }).then((data) => {
+	async function getInstance() {
+		await invoke<Instance>("get_instance", { slug: data.slug }).then((data) => {
 			instance = data;
 		});
 	}
 
-	onMount(() => {
-		fetchTimePlayed();
-		getInstance();
+	onMount(async () => {
+		await fetchTimePlayed();
+		await getInstance();
 	});
 </script>
 

@@ -3,7 +3,7 @@
 	import { listen } from "@tauri-apps/api/event";
 	import { platform } from "@tauri-apps/plugin-os";
 	import { open } from "@tauri-apps/plugin-dialog";
-	import { onMount } from "svelte";
+	import { onDestroy, onMount } from "svelte";
 	import ProgressBars from "$lib/components/core/ProgressBars.svelte";
 	import { Checkbox } from "$lib/components/ui/checkbox";
 	import { Label } from "$lib/components/ui/label";
@@ -44,8 +44,8 @@
 	let showManualJavaTestPopup = $state(false);
 	let manualJavaTestResults = $state<ManualJavaTestResults>();
 
-	function testJava() {
-		invoke<ManualJavaTestResults>("test_java", {
+	async function testJava() {
+		await invoke<ManualJavaTestResults>("test_java", {
 			paths: [manualJava8.path, manualJava17.path, manualJava21.path]
 		}).then((data) => {
 			let [java8, java17, java21] = data;
@@ -54,11 +54,11 @@
 		});
 	}
 
-	onMount(() => {
+	onMount(async () => {
 		let platformName = platform();
 		isLinux = platformName === "linux";
 		resetStates();
-		getJavaFromConfig();
+		await getJavaFromConfig();
 	});
 
 	function resetStates() {
@@ -67,28 +67,28 @@
 	}
 
 	async function downloadJava() {
-		invoke<JavaPaths>("download_java").then((data) => {
+		await invoke<JavaPaths>("download_java").then((data) => {
 			paths = data;
 			console.log("Java downloaded successfully");
 		});
 	}
 
 	async function extractJava() {
-		invoke<JavaPaths>("extract_java", { paths }).then((data) => {
+		await invoke<JavaPaths>("extract_java", { paths }).then((data) => {
 			console.log(data);
 			paths = data;
 			console.log("Java extracted successfully");
 		});
 	}
 
-	function saveJavaToConfig(paths: string[]) {
-		invoke("save_java_to_config", { paths }).then(() => {
+	async function saveJavaToConfig(paths: string[]) {
+		await invoke("save_java_to_config", { paths }).then(() => {
 			console.log("Java saved to config successfully");
 		});
 	}
 
-	function getJavaFromConfig() {
-		invoke<JavaConfig>("get_java_from_config").then((data) => {
+	async function getJavaFromConfig() {
+		await invoke<JavaConfig>("get_java_from_config").then((data) => {
 			let { java8Path, java17Path, java21Path } = data;
 			manualJava8.path = java8Path;
 			manualJava17.path = java17Path;
