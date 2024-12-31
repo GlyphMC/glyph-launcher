@@ -12,6 +12,7 @@ pub struct Config {
     pub accounts: Vec<Account>,
     pub rich_presence: bool,
     pub java: JavaConfig,
+	pub completed_onboarding: bool,
 }
 
 fn create_config_file(config: &Config) -> Result<(), Error> {
@@ -57,6 +58,7 @@ pub fn create_default_config_file() -> Result<(), Error> {
         accounts: vec![default_account],
         rich_presence: true,
         java: JavaConfig::default(),
+		completed_onboarding: false,
     };
 
     create_config_file(&default_config)
@@ -73,4 +75,11 @@ pub fn get_config() -> Result<Config, Error> {
 
 pub fn save_config(config: &Config) -> Result<(), Error> {
     create_config_file(config)
+}
+
+pub fn set_onboarding_complete() -> Result<(), Error> {
+	let mut config = get_config()?;
+	config.completed_onboarding = true;
+	save_config(&config)?;
+	Ok(())
 }

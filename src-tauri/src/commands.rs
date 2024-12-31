@@ -20,8 +20,23 @@ use crate::{
 
 #[tauri::command]
 pub async fn login(state: State<'_, AppState>, handle: AppHandle) -> Result<Profile, ()> {
-    let profile = auth::auth::login(&state, handle).await.unwrap();
+    let login_handle = state.login_handle.clone();
+    let profile = auth::auth::login(&state, handle, login_handle)
+        .await
+        .unwrap();
     Ok(profile.into())
+}
+
+#[tauri::command]
+pub fn cancel_login(state: State<'_, AppState>) -> Result<(), ()> {
+    state.login_handle.cancel();
+    Ok(())
+}
+
+#[tauri::command]
+pub fn set_onboarding_complete() -> Result<(), ()> {
+	config::set_onboarding_complete().unwrap();
+	Ok(())
 }
 
 #[tauri::command]
@@ -36,6 +51,24 @@ pub fn get_minecraft_profiles() -> Result<Vec<Profile>, ()> {
         }
     }
     Ok(profiles)
+}
+
+#[tauri::command]
+pub fn switch_account(id: String) -> Result<(), ()> {
+    auth::auth::switch_account(id).unwrap();
+    Ok(())
+}
+
+#[tauri::command]
+pub fn delete_account(id: String) -> Result<(), ()> {
+    auth::auth::delete_account(id).unwrap();
+    Ok(())
+}
+
+#[tauri::command]
+pub fn get_active_account() -> Result<Option<Account>, ()> {
+    let account = auth::auth::get_active_account().unwrap();
+    Ok(account)
 }
 
 #[tauri::command]
@@ -101,12 +134,12 @@ pub async fn create_instance(
 
 #[tauri::command]
 pub fn update_instance(instance: Instance) -> Result<(), ()> {
-	if let Err(e) = instances::instance::update_instance(instance) {
-		eprintln!("Error updating instance: {:?}", e);
-		return Err(());
-	}
+    if let Err(e) = instances::instance::update_instance(instance) {
+        eprintln!("Error updating instance: {:?}", e);
+        return Err(());
+    }
 
-	Ok(())
+    Ok(())
 }
 
 #[tauri::command]

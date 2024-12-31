@@ -1,5 +1,9 @@
 use std::{
     collections::HashMap,
+    sync::{
+        atomic::{AtomicBool, Ordering},
+        Arc,
+    },
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
 
@@ -29,9 +33,27 @@ struct LoginDetails<'a> {
     uri: &'a str,
 }
 
+#[derive(Clone)]
+pub struct LoginHandle {
+    pub cancel: Arc<AtomicBool>,
+}
+
+impl LoginHandle {
+    pub fn new() -> Self {
+        Self {
+            cancel: Arc::new(AtomicBool::new(false)),
+        }
+    }
+
+    pub fn cancel(&self) {
+        self.cancel.store(true, Ordering::SeqCst);
+    }
+}
+
 pub async fn login(
     state: &State<'_, AppState>,
     handle: AppHandle,
+	login_handle: LoginHandle,
 ) -> Result<MinecraftProfileResponse, Error> {
     let client = state.client.lock().await;
 
@@ -46,6 +68,10 @@ pub async fn login(
 
     let mut authentication_response: Option<AuthorizationTokenResponse> = None;
     while authentication_response.is_none() {
+		if login_handle.cancel.load(Ordering::SeqCst) {
+			return Err(Error::msg("Login cancelled"));
+		}
+
         match authorization_token_response(&device_response.device_code, &client).await {
             Result::Ok(token_response) => {
                 authentication_response = Some(token_response);
@@ -160,6 +186,34 @@ pub async fn refresh(client: &Client) -> Result<(), Error> {
     }
 
     Ok(())
+}
+
+pub fn switch_account(id: String) -> Result<(), Error> {
+    let mut config = config::get_config()?;
+    config
+        .accounts
+        .iter_mut()
+        .for_each(|acc| acc.active = false);
+
+    if let Some(account) = config.accounts.iter_mut().find(|acc| acc.profile.id == id) {
+        account.active = true;
+        config::save_config(&config)?;
+        return Ok(());
+    } else {
+        return Err(Error::msg("Account not found"));
+    }
+}
+
+pub fn delete_account(id: String) -> Result<(), Error> {
+    let mut config = config::get_config()?;
+    config.accounts.retain(|acc| acc.profile.id != id);
+    config::save_config(&config)?;
+    Ok(())
+}
+
+pub fn get_active_account() -> Result<Option<Account>> {
+    let config = config::get_config()?;
+    Ok(config.accounts.into_iter().find(|acc| acc.active))
 }
 
 async fn device_response(client: &Client) -> Result<DeviceCodeResponse> {

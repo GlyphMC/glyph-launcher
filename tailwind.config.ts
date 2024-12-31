@@ -81,12 +81,27 @@ export default {
 				"caret-blink": {
 					"0%,70%,100%": { opacity: "1" },
 					"20%,50%": { opacity: "0" }
+				},
+				"fadeIn": {
+					from: { opacity: "0" },
+					to: { opacity: "1" }
+				},
+				"bounceRight": {
+					"0%, 100%": { transform: "translateX(-25%)" },
+					"50%": { transform: "translateX(0)" }
+				},
+				"bounceLeft": {
+					"0%, 100%": { transform: "translateX(25%)" },
+					"50%": { transform: "translateX(0)" }
 				}
 			},
 			animation: {
 				"accordion-down": "accordion-down 0.2s ease-out",
 				"accordion-up": "accordion-up 0.2s ease-out",
-				"caret-blink": "caret-blink 1.25s ease-out infinite"
+				"caret-blink": "caret-blink 1.25s ease-out infinite",
+				"fade-in": "fadeIn 0.7s ease-in forwards",
+				"bounce-right": "bounceRight 1s ease-in-out infinite",
+				"bounce-left": "bounceLeft 1s ease-in-out infinite"
 			}
 		}
 	},

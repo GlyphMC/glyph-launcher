@@ -39,8 +39,4 @@ pub struct Java {
 pub struct Settings {
     pub has_launched: bool,
     rich_presence: bool,
-    maximised: bool,
-    memory: u64,
-	window_width: u32,
-	window_height: u32,
 }

@@ -72,7 +72,7 @@
 		}
 		await invoke("create_instance", { instance }).then(() => {
 			console.log("Instance created successfully");
-			goto(`/#/instance/${instance.slug}`);
+			goto(`/#/launcher/instance/${instance.slug}`);
 		});
 	}
 

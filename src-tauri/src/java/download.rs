@@ -3,6 +3,7 @@ use std::{env, path::PathBuf};
 use anyhow::{anyhow, Error, Result};
 use log::{debug, info};
 use reqwest::Client;
+use serde::{Deserialize, Serialize};
 use tauri::{async_runtime::spawn, AppHandle, Emitter, State};
 use tokio::{fs::File, io::AsyncWriteExt, time::Instant};
 
@@ -13,6 +14,11 @@ use crate::{
 };
 
 const BASE_URL: &str = "https://api.azul.com/metadata/v1/zulu/packages/";
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+struct DownloadPaths {
+	paths: Vec<String>,
+}
 
 pub async fn download_java(
     state: &State<'_, AppState>,
@@ -26,6 +32,14 @@ pub async fn download_java(
     )?;
 
     let client = state.client.lock().await;
+	let config_dir = config::get_config_dir()?;
+    let runtime_dir = config_dir.join("runtime");
+
+	debug!("Clearing runtime directory: {}", runtime_dir.display());
+	if runtime_dir.exists() {
+		tokio::fs::remove_dir_all(&runtime_dir).await?;
+		tokio::fs::create_dir_all(&runtime_dir).await?;
+	}
 
     let handle_8 = {
         let client = client.clone();
@@ -51,8 +65,12 @@ pub async fn download_java(
 
     handle.emit(
         "download-finished",
-        Payload {
-            message: "Download finished",
+        DownloadPaths {
+            paths: vec![
+				java_8_archive_path.to_string_lossy().to_string(),
+				java_17_archive_path.to_string_lossy().to_string(),
+				java_21_archive_path.to_string_lossy().to_string(),
+			],
         },
     )?;
 

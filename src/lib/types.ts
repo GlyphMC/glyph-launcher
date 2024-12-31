@@ -18,6 +18,10 @@ export type JavaProgress = {
 	extract: { [key: number]: number };
 };
 
+export type DownloadPaths = {
+	paths: string[];
+}
+
 export type ManualJava = {
 	version: 8 | 17 | 21;
 	path: string;

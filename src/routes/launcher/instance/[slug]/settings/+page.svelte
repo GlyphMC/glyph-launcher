@@ -46,7 +46,7 @@
 		console.log("Deleting instance " + data.slug);
 		await invoke("delete_instance", { slug: data.slug }).then(() => {
 			console.log("Instance deleted");
-			goto("/#/");
+			goto("/#/launcher/");
 		});
 	}
 

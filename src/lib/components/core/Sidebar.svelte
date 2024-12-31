@@ -3,16 +3,15 @@
 	import { Input } from "$lib/components/ui/input";
 	import * as Sidebar from "$lib/components/ui/sidebar";
 	import * as DropdownMenu from "$lib/components/ui/dropdown-menu";
-	import * as Card from "$lib/components/ui/card";
 	import { ScrollArea } from "$lib/components/ui/scroll-area";
 	import { Separator } from "$lib/components/ui/separator";
 	import type { Instance, InstanceConfig, LoginDetailsEvent, MinecraftProfile } from "$lib/types";
 	import { invoke } from "@tauri-apps/api/core";
 	import { listen } from "@tauri-apps/api/event";
-	import { writeText } from "@tauri-apps/plugin-clipboard-manager";
-	import { open } from "@tauri-apps/plugin-shell";
 	import ChevronUp from "lucide-svelte/icons/chevron-up";
 	import { goto } from "$app/navigation";
+	import { onMount } from "svelte";
+	import LoginPopUp from "./LoginPopUp.svelte";
 
 	let instances = $state<Instance[]>([]);
 	let searchInput = $state("");
@@ -66,34 +65,18 @@
 		showPopUp = true;
 	});
 
-	async function copyAndOpen() {
-		await writeText(loginCode).then(() => open(verificationUri));
-	}
-
 	async function logout() {
 		console.log("logout");
-
 	}
 
-	fetchInstances();
-	getMinecraftProfiles();
+	onMount(async () => {
+		await fetchInstances();
+		await getMinecraftProfiles();
+	});
 </script>
 
 {#if showPopUp}
-	<div class="fixed inset-0 z-50 flex items-center justify-center bg-zinc-900 bg-opacity-50 backdrop-blur-md">
-		<Card.Root class="relative w-full max-w-sm rounded-lg bg-zinc-900 p-2 text-center shadow-lg">
-			<Card.Header>
-				<h2 class="text-lg font-bold text-zinc-50">Login Verification</h2>
-				<p class="mt-2 font-bold text-zinc-50">Please enter the following code:</p>
-			</Card.Header>
-			<Card.Content>
-				<p class="my-4 font-mono text-xl text-zinc-50">{loginCode}</p>
-			</Card.Content>
-			<Card.Footer>
-				<Button onclick={copyAndOpen} variant="outline">Copy and Open</Button>
-			</Card.Footer>
-		</Card.Root>
-	</div>
+	<LoginPopUp {loginCode} {verificationUri} onCancel={() => (showPopUp = false)} />
 {/if}
 
 <Sidebar.Root collapsible="icon">
@@ -101,7 +84,7 @@
 		<Sidebar.Header class="text-zinc-100 hover:text-zinc-50">
 			<a href="/#/" class="font-bold">Glyph Launcher</a>
 			<Input type="text" placeholder="Search instances..." bind:value={searchInput} />
-			<Button variant="outline" onclick={() => goto("/#/instance/new")}>Add instance</Button>
+			<Button variant="outline" onclick={() => goto("/#/launcher/instance/new")}>Add instance</Button>
 		</Sidebar.Header>
 
 		<Sidebar.Content class="mx-2 mt-0">
@@ -140,10 +123,10 @@
 								{/snippet}
 							</DropdownMenu.Trigger>
 							<DropdownMenu.Content side="top" class="w-[--bits-dropdown-menu-anchor-width]">
-								<DropdownMenu.Item onclick={() => goto("/#/accounts")}>
+								<DropdownMenu.Item onclick={() => goto("/#/launcher/accounts")}>
 									<span>Accounts</span>
 								</DropdownMenu.Item>
-								<DropdownMenu.Item onclick={() => goto("/#/settings")}>
+								<DropdownMenu.Item onclick={() => goto("/#/launcher/settings")}>
 									<span>Settings</span>
 								</DropdownMenu.Item>
 								<DropdownMenu.Item onclick={logout}>
