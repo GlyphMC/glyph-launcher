@@ -73,21 +73,21 @@ pub async fn create_instance(
             instance.java = Java {
                 path: java_config.java_8_path,
                 args: vec![],
-				version: "8".to_string()
+                version: "8".to_string(),
             };
         }
         17 => {
             instance.java = Java {
                 path: java_config.java_17_path,
                 args: vec![],
-				version: "17".to_string()
+                version: "17".to_string(),
             };
         }
         21 => {
             instance.java = Java {
                 path: java_config.java_21_path,
                 args: vec![],
-				version: "21".to_string()
+                version: "21".to_string(),
             };
         }
         _ => return Err(anyhow!("Unsupported Java version: {}", java_version)),
@@ -111,26 +111,26 @@ pub async fn create_instance(
 }
 
 pub fn update_instance(instance: Instance) -> Result<(), Error> {
-	let instance_config = get_instances()?;
-	let instances = instance_config.instances;
-	let new_instances = instances
-		.into_iter()
-		.map(|inst| {
-			if inst.slug == instance.slug {
-				instance.clone()
-			} else {
-				inst
-			}
-		})
-		.collect();
-	let new_instance_config = InstanceConfig {
-		instances: new_instances,
-	};
-	let instances_config_path = get_instance_config_path()?;
-	let instances_data = serde_json::to_string_pretty(&new_instance_config).unwrap();
-	fs::write(instances_config_path, instances_data)?;
+    let instance_config = get_instances()?;
+    let instances = instance_config.instances;
+    let new_instances = instances
+        .into_iter()
+        .map(|inst| {
+            if inst.slug == instance.slug {
+                instance.clone()
+            } else {
+                inst
+            }
+        })
+        .collect();
+    let new_instance_config = InstanceConfig {
+        instances: new_instances,
+    };
+    let instances_config_path = get_instance_config_path()?;
+    let instances_data = serde_json::to_string_pretty(&new_instance_config).unwrap();
+    fs::write(instances_config_path, instances_data)?;
 
-	Ok(())
+    Ok(())
 }
 
 pub fn delete_instance(handle: AppHandle, slug: String) -> Result<(), Error> {
@@ -150,8 +150,8 @@ pub fn delete_instance(handle: AppHandle, slug: String) -> Result<(), Error> {
     let instances_path = get_instances_path()?;
     let instance_dir = instances_path.join(&slug);
     if instance_dir.exists() {
-		fs::remove_dir_all(instance_dir)?;
-	}
+        fs::remove_dir_all(instance_dir)?;
+    }
 
     handle.emit(
         "instance-list-updated",

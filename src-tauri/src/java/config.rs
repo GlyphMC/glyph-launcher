@@ -24,7 +24,7 @@ pub fn save_java_to_config(paths: (PathBuf, PathBuf, PathBuf)) -> Result<(), Err
             java_17_path: java_17_path.to_string_lossy().to_string() + os_suffix,
             java_21_path: java_21_path.to_string_lossy().to_string() + os_suffix,
         },
-		completed_onboarding: config.completed_onboarding,
+        completed_onboarding: config.completed_onboarding,
     };
 
     config::save_config(&new_config)?;

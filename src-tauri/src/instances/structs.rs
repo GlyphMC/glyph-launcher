@@ -31,7 +31,7 @@ struct Modloader {
 pub struct Java {
     pub path: String,
     pub args: Vec<String>,
-	pub version: String
+    pub version: String,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

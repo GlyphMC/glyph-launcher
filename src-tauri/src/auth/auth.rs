@@ -53,7 +53,7 @@ impl LoginHandle {
 pub async fn login(
     state: &State<'_, AppState>,
     handle: AppHandle,
-	login_handle: LoginHandle,
+    login_handle: LoginHandle,
 ) -> Result<MinecraftProfileResponse, Error> {
     let client = state.client.lock().await;
 
@@ -68,9 +68,9 @@ pub async fn login(
 
     let mut authentication_response: Option<AuthorizationTokenResponse> = None;
     while authentication_response.is_none() {
-		if login_handle.cancel.load(Ordering::SeqCst) {
-			return Err(Error::msg("Login cancelled"));
-		}
+        if login_handle.cancel.load(Ordering::SeqCst) {
+            return Err(Error::msg("Login cancelled"));
+        }
 
         match authorization_token_response(&device_response.device_code, &client).await {
             Result::Ok(token_response) => {

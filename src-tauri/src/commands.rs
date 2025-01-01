@@ -35,8 +35,8 @@ pub fn cancel_login(state: State<'_, AppState>) -> Result<(), ()> {
 
 #[tauri::command]
 pub fn set_onboarding_complete() -> Result<(), ()> {
-	config::set_onboarding_complete().unwrap();
-	Ok(())
+    config::set_onboarding_complete().unwrap();
+    Ok(())
 }
 
 #[tauri::command]

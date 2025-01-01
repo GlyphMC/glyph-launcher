@@ -28,6 +28,12 @@ pub struct AppState {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
+            let _ = app
+                .get_webview_window("main")
+                .expect("Failed to get main window")
+                .set_focus();
+        }))
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_os::init())
         .plugin(tauri_plugin_shell::init())
@@ -57,7 +63,6 @@ pub fn run() {
             }
 
             let first_launch = !config::config_file_exists()?;
-            info!("First launch: {}", first_launch);
 
             if first_launch {
                 config::create_default_config_file()?;
@@ -65,6 +70,7 @@ pub fn run() {
             }
 
             let config = config::get_config()?;
+            info!("Completed onboarding: {}", config.completed_onboarding);
             let location = if config.completed_onboarding {
                 "launcher".to_string()
             } else {

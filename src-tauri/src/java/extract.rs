@@ -95,10 +95,7 @@ async fn extract_java_archive(
         let file_name = entry.filename().as_str()?;
         let file_path = PathBuf::from(file_name);
 
-		let stripped_path = file_path
-			.components()
-			.skip(1)
-			.collect::<PathBuf>();
+        let stripped_path = file_path.components().skip(1).collect::<PathBuf>();
 
         if stripped_path
             .components()
