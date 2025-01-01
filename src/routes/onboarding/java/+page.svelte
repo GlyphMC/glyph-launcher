@@ -4,11 +4,13 @@
 	import MoveRight from "lucide-svelte/icons/move-right";
 	import MoveLeft from "lucide-svelte/icons/move-left";
 	import JavaDownloadPopUp from "$lib/components/core/JavaDownloadPopUp.svelte";
+	import ManualJavaSetup from "$lib/components/core/ManualJavaSetup.svelte";
 
 	let javaSetupComplete = $state(false);
 	let isNextDisabled = $derived(!javaSetupComplete);
 
 	let showAutomaticJavaPopup = $state(false);
+	let showManualJavaEntries = $state(false);
 
 	function nextPage() {
 		goto("/#/onboarding/complete");
@@ -24,6 +26,7 @@
 		onComplete={() => {
 			showAutomaticJavaPopup = false;
 			javaSetupComplete = true;
+			showManualJavaEntries = false;
 		}} />
 {/if}
 
@@ -33,9 +36,15 @@
 
 	<div class="mt-8 flex animate-fade-in flex-row gap-4 opacity-0 [animation-delay:1000ms]">
 		<Button onclick={() => (showAutomaticJavaPopup = true)}>Automatic Setup</Button>
-		<Button variant="destructive" disabled={true}>Manual Setup</Button>
-		<!--Currently disabled-->
+		<Button variant="destructive" onclick={() => (showManualJavaEntries = !showManualJavaEntries)}>Manual Setup</Button>
 	</div>
+
+	{#if showManualJavaEntries}
+		<p class="mt-8 text-lg">Enter the paths to your Java installations.</p>
+		<div class="mt-4">
+			<ManualJavaSetup onComplete={() => (javaSetupComplete = true)} />
+		</div>
+	{/if}
 
 	<Button onclick={previousPage} class="fixed bottom-4 left-4 animate-fade-in opacity-0 [animation-delay:1200ms]">
 		<MoveLeft class="mr-2 animate-bounce-left" />

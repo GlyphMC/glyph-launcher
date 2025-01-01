@@ -92,7 +92,7 @@
 		}
 
 		if (extractState === "done") {
-			await saveJavaToConfig(paths);
+			await saveJavaToConfig(paths, true);
 			onComplete();
 			return;
 		}
