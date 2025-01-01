@@ -8,8 +8,8 @@ export const load: LayoutLoad = async ({ params }) => {
 		sections: [
 			{ slug: "worlds", title: "Worlds" },
 			{ slug: "screenshots", title: "Screenshots" },
-			{ slug: "settings", title: "Settings" },
+			{ slug: "settings", title: "Settings" }
 			// TODO: Add more sections
 		]
 	};
-}
+};

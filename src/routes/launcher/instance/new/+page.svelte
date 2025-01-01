@@ -40,9 +40,7 @@
 	let versionTrigger = $derived(versions.find((v) => v.id === selectedVersion?.id)?.id ?? "Select a version");
 	let modloaderTrigger = $derived(modloader ? modloader : "Select a modloader");
 
-	let isButtonDisabled = $derived(
-		!instanceName || !selectedVersionId || !modloader || (ram[0] <= 0)
-	);
+	let isButtonDisabled = $derived(!instanceName || !selectedVersionId || !modloader || ram[0] <= 0);
 
 	async function createInstance(version: Version) {
 		let instance: Instance = {
@@ -69,7 +67,7 @@
 				windowWidth: 854,
 				windowHeight: 480
 			}
-		}
+		};
 		await invoke("create_instance", { instance }).then(() => {
 			console.log("Instance created successfully");
 			goto(`/#/launcher/instance/${instance.slug}`);

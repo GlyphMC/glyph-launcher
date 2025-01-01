@@ -8,10 +8,10 @@ Please note that Glyph launcher is still in development and is not yet ready for
 
 In order to build the launcher from source, follow these steps:
 
-1) Install Node.js
-2) Install pnpm
-3) Install Rust
-4) Clone the repository
-5) Run `pnpm install`
-6) Run `pnpm run tauri build`
-7) The launcher will be built in the `src-tauri/target/release` directory
+1. Install Node.js
+2. Install pnpm
+3. Install Rust
+4. Clone the repository
+5. Run `pnpm install`
+6. Run `pnpm run tauri build`
+7. The launcher will be built in the `src-tauri/target/release` directory

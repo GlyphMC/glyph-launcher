@@ -86,7 +86,7 @@
 
 	async function handleAction() {
 		if (downloadState === "done") {
-			downloadState = "none"
+			downloadState = "none";
 			await extractJava();
 			return;
 		}
@@ -104,7 +104,6 @@
 
 	let { onComplete }: Props = $props();
 </script>
-
 
 <div class="fixed inset-0 z-50 flex items-center justify-center bg-zinc-900 bg-opacity-50 font-display backdrop-blur-md">
 	<Card.Root class="relative w-full max-w-sm rounded-lg bg-zinc-900 p-2 text-center shadow-lg">

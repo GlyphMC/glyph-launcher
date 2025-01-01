@@ -37,7 +37,7 @@
 		<Card.Content>
 			<p class="my-4 font-mono text-xl text-zinc-50">{loginCode}</p>
 		</Card.Content>
-		<Card.Footer class="flex gap-2 justify-center">
+		<Card.Footer class="flex justify-center gap-2">
 			<Button onclick={copyAndOpen} variant="outline">Copy and Open</Button>
 			<Button onclick={cancelLogin} variant="destructive">Cancel</Button>
 		</Card.Footer>

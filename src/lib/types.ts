@@ -20,7 +20,7 @@ export type JavaProgress = {
 
 export type DownloadPaths = {
 	paths: string[];
-}
+};
 
 export type ManualJava = {
 	version: 8 | 17 | 21;

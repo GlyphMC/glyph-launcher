@@ -51,7 +51,7 @@
 </script>
 
 {#if showAutomaticJavaPopup}
-	<JavaDownloadPopUp onComplete={() => showAutomaticJavaPopup = false} />
+	<JavaDownloadPopUp onComplete={() => (showAutomaticJavaPopup = false)} />
 {/if}
 
 {#if showManualJavaTestPopup}
