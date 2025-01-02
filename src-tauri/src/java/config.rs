@@ -1,6 +1,7 @@
 use std::path::PathBuf;
 
 use anyhow::{Error, Result};
+use log::info;
 
 use crate::config::{self, Config};
 
@@ -14,32 +15,32 @@ fn handle_path(path: PathBuf) -> PathBuf {
     }
 }
 
-pub fn save_java_to_config(paths: (PathBuf, PathBuf, PathBuf)) -> Result<(), Error> {
-    let (java_8_path, java_17_path, java_21_path) = paths;
-    let config = config::get_config()?;
+fn get_java_path(path: PathBuf, automatic: bool) -> PathBuf {
+    if automatic {
+        if cfg!(target_os = "windows") {
+            path.join("\\bin\\javaw.exe")
+        } else {
+            path.join("bin/java")
+        }
+    } else {
+        path
+    }
+}
 
-    println!("java_8_path: {:?}", java_8_path);
-    println!("java_17_path: {:?}", java_17_path);
-    println!("java_21_path: {:?}", java_21_path);
+pub fn save_java_to_config(paths: (PathBuf, PathBuf, PathBuf), automatic: bool) -> Result<(), Error> {
+	let (java_8_path, java_17_path, java_21_path) = paths;
 
-    let processed_paths = (
-        if !java_8_path.as_os_str().is_empty() {
-            handle_path(java_8_path)
-        } else {
-            java_8_path
-        },
-        if !java_17_path.as_os_str().is_empty() {
-            handle_path(java_17_path)
-        } else {
-            java_17_path
-        },
-        if !java_21_path.as_os_str().is_empty() {
-            handle_path(java_21_path)
-        } else {
-            java_21_path
-        },
+	let processed_paths = (
+        handle_path(get_java_path(java_8_path, automatic)),
+        handle_path(get_java_path(java_17_path, automatic)),
+        handle_path(get_java_path(java_21_path, automatic)),
     );
 
+	info!("Java 8 path: {:?}", processed_paths.0);
+	info!("Java 17 path: {:?}", processed_paths.1);
+	info!("Java 21 path: {:?}", processed_paths.2);
+
+	let config = config::get_config()?;
     let new_config = Config {
         accounts: config.accounts,
         rich_presence: config.rich_presence,

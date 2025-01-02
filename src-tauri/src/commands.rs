@@ -96,8 +96,8 @@ pub fn test_java(paths: (PathBuf, PathBuf, PathBuf)) -> Result<(bool, bool, bool
 }
 
 #[tauri::command]
-pub fn save_java_to_config(paths: (PathBuf, PathBuf, PathBuf)) {
-    java::config::save_java_to_config(paths).unwrap();
+pub fn save_java_to_config(paths: (PathBuf, PathBuf, PathBuf), automatic: bool) {
+    java::config::save_java_to_config(paths, automatic).unwrap();
 }
 
 #[tauri::command]

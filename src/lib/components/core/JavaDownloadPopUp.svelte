@@ -17,7 +17,6 @@
 	});
 
 	let statusText = $derived(getStatusText(downloadState, extractState));
-	let buttonText = $derived(getButtonText());
 	let isButtonDisabled = $derived(downloadState === "downloading" || extractState === "extracting");
 	let currentProgress = $derived(getCurrentProgress());
 
@@ -28,12 +27,16 @@
 
 	function setupEventListeners() {
 		listen("download-started", () => (downloadState = "downloading"));
-		listen<DownloadPaths>("download-finished", (event) => {
+		listen<DownloadPaths>("download-finished", async (event) => {
 			downloadState = "done";
-			event.payload.paths = paths;
+			paths = event.payload.paths;
+			await startExtraction();
 		});
 		listen("extract-started", () => (extractState = "extracting"));
-		listen("extract-finished", () => (extractState = "done"));
+		listen("extract-finished", async () => {
+			extractState = "done";
+			await saveJavaToConfig(paths, true);
+		});
 
 		[8, 17, 21].forEach((version) => {
 			setProgressListener("java-download", "download", version);
@@ -61,41 +64,24 @@
 		return "";
 	}
 
-	function getButtonText() {
-		return downloadState === "downloading" || downloadState === "done" ? "Extract" : "Done";
-	}
-
 	function getCurrentProgress() {
 		return downloadState === "downloading" || downloadState === "done" ? javaProgress.download : javaProgress.extract;
 	}
 
 	async function downloadJava() {
 		await invoke<JavaPaths>("download_java").then((data) => {
-			paths = data;
+			paths = data.map((path) => path.replace(".zip", ""));
 			console.log("Java downloaded successfully");
 		});
 	}
 
-	async function extractJava() {
+	async function startExtraction() {
+		downloadState = "none";
 		await invoke<JavaPaths>("extract_java", { paths }).then((data) => {
 			console.log(data);
 			paths = data;
 			console.log("Java extracted successfully");
 		});
-	}
-
-	async function handleAction() {
-		if (downloadState === "done") {
-			downloadState = "none";
-			await extractJava();
-			return;
-		}
-
-		if (extractState === "done") {
-			await saveJavaToConfig(paths, true);
-			onComplete();
-			return;
-		}
 	}
 
 	type Props = {
@@ -117,8 +103,8 @@
 		</Card.Content>
 
 		<Card.Footer class="flex justify-center">
-			<Button onclick={handleAction} variant="outline" disabled={isButtonDisabled}>
-				{buttonText}
+			<Button onclick={() => onComplete()} variant="outline" disabled={isButtonDisabled}>
+				Done
 			</Button>
 		</Card.Footer>
 	</Card.Root>
