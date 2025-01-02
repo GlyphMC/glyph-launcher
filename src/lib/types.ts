@@ -27,7 +27,13 @@ export type ManualJava = {
 	path: string;
 };
 
-export type ManualJavaTestResults = [boolean, boolean, boolean];
+export type JavaTestInfo = {
+	valid: boolean;
+	version: string;
+	distribution: string;
+	expectedVersion: number;
+	versionMismatch: boolean
+}
 
 export type ProgressEvent = {
 	percentage: number;

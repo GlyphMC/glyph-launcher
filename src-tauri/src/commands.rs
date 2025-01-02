@@ -1,6 +1,7 @@
 use std::path::PathBuf;
 
 use anyhow::Result;
+use log::info;
 use tauri::{AppHandle, State};
 
 use crate::{
@@ -13,7 +14,7 @@ use crate::{
         self,
         structs::{Instance, InstanceConfig},
     },
-    java::{self, structs::JavaConfig},
+    java::{self, structs::JavaConfig, test::JavaTestInfo},
     resources::{self, versions::Version},
     AppState,
 };
@@ -90,8 +91,9 @@ pub async fn extract_java(
 }
 
 #[tauri::command]
-pub fn test_java(paths: (PathBuf, PathBuf, PathBuf)) -> Result<(bool, bool, bool), ()> {
+pub fn test_java(paths: (PathBuf, PathBuf, PathBuf)) -> Result<(JavaTestInfo, JavaTestInfo, JavaTestInfo), ()> {
     let results = java::test::test_java(paths).unwrap();
+	info!("{:?}", results);
     Ok(results)
 }
 

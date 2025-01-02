@@ -7,15 +7,15 @@
 	import { open } from "@tauri-apps/plugin-dialog";
 	import { onMount } from "svelte";
 	import { invoke } from "@tauri-apps/api/core";
-	import type { JavaConfig, ManualJava, ManualJavaTestResults } from "$lib/types";
+	import type { JavaConfig, JavaTestInfo, ManualJava } from "$lib/types";
 	import { saveJavaToConfig } from "$lib/utils";
 
 	let manualJava8 = $state<ManualJava>({ version: 8, path: "" });
 	let manualJava17 = $state<ManualJava>({ version: 17, path: "" });
 	let manualJava21 = $state<ManualJava>({ version: 21, path: "" });
 
+	let javaTestResults = $state<JavaTestInfo[]>([]);
 	let showManualJavaTestPopup = $state(false);
-	let manualJavaTestResults = $state<ManualJavaTestResults>();
 
 	onMount(async () => {
 		await getJavaFromConfig();
@@ -31,18 +31,19 @@
 	}
 
 	async function testJava() {
-		await invoke<ManualJavaTestResults>("test_java", {
+		await invoke<JavaTestInfo[]>("test_java", {
 			paths: [manualJava8.path, manualJava17.path, manualJava21.path]
 		}).then((data) => {
-			let [java8, java17, java21] = data;
+			javaTestResults = data;
 			showManualJavaTestPopup = true;
-			manualJavaTestResults = [java8, java17, java21];
 		});
 	}
 
+	$inspect(javaTestResults);
+
 	type Props = {
 		onComplete?: () => void;
-	}
+	};
 
 	let { onComplete }: Props = $props();
 </script>
@@ -54,18 +55,29 @@
 				<h2 class="text-xl font-bold text-zinc-50">Test Java Setup</h2>
 			</Card.Header>
 			<Card.Content>
-				{#if manualJavaTestResults}
-					{#each manualJavaTestResults as result, index}
-						<p class="text-zinc-50">
-							Java {[8, 17, 21][index]}:
-							{#if result}
-								<span class="text-green-500">Success</span>
-							{:else}
-								<span class="text-red-500">Failed</span>
-							{/if}
-						</p>
-					{/each}
-				{/if}
+				{#each javaTestResults as result, index}
+					<div class="mb-4 rounded-md border border-zinc-800 p-3">
+						<h3 class="mb-2 font-semibold text-zinc-50">
+							Java {[8, 17, 21][index]}
+						</h3>
+						{#if result.valid && !result.versionMismatch}
+							<div class="space-y-1 text-sm">
+								<p class="text-green-500">✅ Java detected</p>
+								<p class="text-zinc-300">Version: {result.version}</p>
+								<p class="text-zinc-300">Distribution: {result.distribution}</p>
+							</div>
+						{:else if result.versionMismatch}
+							<div class="space-y-1 text-sm">
+								<p class="text-yellow-500">
+									⚠️ Warning: Expected Java {result.expectedVersion} but found Java {result.version}
+								</p>
+								<p class="text-zinc-300">Distribution: {result.distribution}</p>
+							</div>
+						{:else}
+							<p class="text-red-500">❌ Java not found or invalid</p>
+						{/if}
+					</div>
+				{/each}
 			</Card.Content>
 			<Card.Footer class="flex justify-center gap-4">
 				<Button
