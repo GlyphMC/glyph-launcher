@@ -32,8 +32,8 @@ export type JavaTestInfo = {
 	version: string;
 	distribution: string;
 	expectedVersion: number;
-	versionMismatch: boolean
-}
+	versionMismatch: boolean;
+};
 
 export type ProgressEvent = {
 	percentage: number;

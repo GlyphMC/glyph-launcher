@@ -91,9 +91,11 @@ pub async fn extract_java(
 }
 
 #[tauri::command]
-pub fn test_java(paths: (PathBuf, PathBuf, PathBuf)) -> Result<(JavaTestInfo, JavaTestInfo, JavaTestInfo), ()> {
+pub fn test_java(
+    paths: (PathBuf, PathBuf, PathBuf),
+) -> Result<(JavaTestInfo, JavaTestInfo, JavaTestInfo), ()> {
     let results = java::test::test_java(paths).unwrap();
-	info!("{:?}", results);
+    info!("{:?}", results);
     Ok(results)
 }
 

@@ -103,9 +103,7 @@
 		</Card.Content>
 
 		<Card.Footer class="flex justify-center">
-			<Button onclick={() => onComplete()} variant="outline" disabled={isButtonDisabled}>
-				Done
-			</Button>
+			<Button onclick={() => onComplete()} variant="outline" disabled={isButtonDisabled}>Done</Button>
 		</Card.Footer>
 	</Card.Root>
 </div>

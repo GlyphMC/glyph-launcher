@@ -9,9 +9,9 @@ pub struct JavaTestInfo {
     pub valid: bool,
     pub version: String,
     pub distribution: String,
-	#[serde(rename = "expectedVersion")]
+    #[serde(rename = "expectedVersion")]
     pub expected_version: u8,
-	#[serde(rename = "versionMismatch")]
+    #[serde(rename = "versionMismatch")]
     version_mismatch: bool,
 }
 
@@ -40,14 +40,14 @@ pub fn test_java(
                 info.version = version_cap[1].to_string();
 
                 let major_version = info
-				.version
-				.split('.')
-				.next()
-				.and_then(|v| v.parse::<u8>().ok())
-				.unwrap();
+                    .version
+                    .split('.')
+                    .next()
+                    .and_then(|v| v.parse::<u8>().ok())
+                    .unwrap();
 
-				info.version_mismatch = major_version != *expected_version;
-				info.valid = !info.version_mismatch;
+                info.version_mismatch = major_version != *expected_version;
+                info.valid = !info.version_mismatch;
             }
 
             if let Some(distro_cap) = distro_regex.captures(&output_str) {

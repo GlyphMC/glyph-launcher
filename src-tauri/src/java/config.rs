@@ -27,20 +27,23 @@ fn get_java_path(path: PathBuf, automatic: bool) -> PathBuf {
     }
 }
 
-pub fn save_java_to_config(paths: (PathBuf, PathBuf, PathBuf), automatic: bool) -> Result<(), Error> {
-	let (java_8_path, java_17_path, java_21_path) = paths;
+pub fn save_java_to_config(
+    paths: (PathBuf, PathBuf, PathBuf),
+    automatic: bool,
+) -> Result<(), Error> {
+    let (java_8_path, java_17_path, java_21_path) = paths;
 
-	let processed_paths = (
+    let processed_paths = (
         handle_path(get_java_path(java_8_path, automatic)),
         handle_path(get_java_path(java_17_path, automatic)),
         handle_path(get_java_path(java_21_path, automatic)),
     );
 
-	info!("Java 8 path: {:?}", processed_paths.0);
-	info!("Java 17 path: {:?}", processed_paths.1);
-	info!("Java 21 path: {:?}", processed_paths.2);
+    info!("Java 8 path: {:?}", processed_paths.0);
+    info!("Java 17 path: {:?}", processed_paths.1);
+    info!("Java 21 path: {:?}", processed_paths.2);
 
-	let config = config::get_config()?;
+    let config = config::get_config()?;
     let new_config = Config {
         accounts: config.accounts,
         rich_presence: config.rich_presence,
