@@ -8,6 +8,7 @@
 	import type { Instance, Modloader, Version } from "$lib/types";
 	import { invoke } from "@tauri-apps/api/core";
 	import { goto } from "$app/navigation";
+	import NumberFlow from "@number-flow/svelte";
 
 	let instanceName = $state("");
 	let latestReleaseVersion = $state<Version>();
@@ -140,9 +141,9 @@
 			<Label class="text-zinc-50">Start maximised</Label>
 		</div>
 		<div class="inline-flex items-center space-x-5 py-2">
-			<Label class="">RAM</Label>
+			<Label>RAM</Label>
 			<Slider bind:value={ram} max={10240} step={1024} class="w-60" />
-			<p>{ram} MB</p>
+			<NumberFlow value={ram[0]} format={{ useGrouping: false }} suffix=" MB" />
 		</div>
 		<Button onclick={() => selectedVersion && createInstance(selectedVersion)} disabled={isButtonDisabled} class="h-10 w-20">Create</Button>
 	</div>

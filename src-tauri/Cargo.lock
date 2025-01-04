@@ -1714,7 +1714,6 @@ dependencies = [
  "chrono",
  "dirs",
  "log",
- "regex",
  "reqwest",
  "serde",
  "serde_json",

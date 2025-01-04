@@ -64,14 +64,14 @@
 							<div class="space-y-1 text-sm">
 								<p class="text-green-500">✅ Java detected</p>
 								<p class="text-zinc-300">Version: {result.version}</p>
-								<p class="text-zinc-300">Distribution: {result.distribution}</p>
+								<p class="text-zinc-300">Vendor: {result.vendor}</p>
 							</div>
 						{:else if result.versionMismatch}
 							<div class="space-y-1 text-sm">
 								<p class="text-yellow-500">
 									⚠️ Warning: Expected Java {result.expectedVersion} but found Java {result.version}
 								</p>
-								<p class="text-zinc-300">Distribution: {result.distribution}</p>
+								<p class="text-zinc-300">Vendor: {result.vendor}</p>
 							</div>
 						{:else}
 							<p class="text-red-500">❌ Java not found or invalid</p>

@@ -9,21 +9,21 @@ use super::structs::JavaConfig;
 
 fn handle_path(path: PathBuf) -> PathBuf {
     if cfg!(target_os = "windows") && path.ends_with("java.exe") {
-        PathBuf::from(path.to_string_lossy().replace("java.exe", "javaw.exe"))
+        path.with_file_name("javaw.exe")
     } else {
         path
     }
 }
 
 fn get_java_path(path: PathBuf, automatic: bool) -> PathBuf {
-    if automatic {
-        if cfg!(target_os = "windows") {
-            path.join("\\bin\\javaw.exe")
-        } else {
-            path.join("bin/java")
-        }
+    if !automatic {
+        return path;
+    }
+
+    if cfg!(target_os = "windows") {
+        path.join("bin").join("javaw.exe")
     } else {
-        path
+        path.join("bin").join("java")
     }
 }
 

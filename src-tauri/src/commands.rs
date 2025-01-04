@@ -95,7 +95,6 @@ pub fn test_java(
     paths: (PathBuf, PathBuf, PathBuf),
 ) -> Result<(JavaTestInfo, JavaTestInfo, JavaTestInfo), ()> {
     let results = java::test::test_java(paths).unwrap();
-    info!("{:?}", results);
     Ok(results)
 }
 

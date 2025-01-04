@@ -30,7 +30,7 @@ export type ManualJava = {
 export type JavaTestInfo = {
 	valid: boolean;
 	version: string;
-	distribution: string;
+	vendor: string;
 	expectedVersion: number;
 	versionMismatch: boolean;
 };
