@@ -19,6 +19,8 @@
 	</div>
 {/snippet}
 
-{@render Bar(java8Progress, 8)}
-{@render Bar(java17Progress, 17)}
-{@render Bar(java21Progress, 21)}
+<div class="flex flex-col space-y-2">
+	{@render Bar(java8Progress, 8)}
+	{@render Bar(java17Progress, 17)}
+	{@render Bar(java21Progress, 21)}
+</div>

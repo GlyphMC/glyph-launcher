@@ -50,8 +50,7 @@
 			game: {
 				version: version.id,
 				modloader: {
-					loader: modloader,
-					version: ""
+					loader: modloader
 				},
 				url: version.url
 			},
@@ -63,7 +62,7 @@
 			settings: {
 				hasLaunched: false,
 				richPresence: discordRichPresence,
-				maximised: startMaximized,
+				maximized: startMaximized,
 				memory: parseInt(ram.join("")),
 				windowWidth: 854,
 				windowHeight: 480

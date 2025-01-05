@@ -50,7 +50,7 @@ export type Instance = {
 		version: string;
 		modloader: {
 			loader: string;
-			version: string;
+			version?: string;
 		};
 		url: string;
 	};
@@ -62,7 +62,7 @@ export type Instance = {
 	settings: {
 		hasLaunched: boolean;
 		richPresence: boolean;
-		maximised: boolean;
+		maximized: boolean;
 		memory: number;
 		windowWidth: number;
 		windowHeight: number;

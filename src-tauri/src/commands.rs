@@ -1,7 +1,6 @@
 use std::path::PathBuf;
 
 use anyhow::Result;
-use log::info;
 use tauri::{AppHandle, State};
 
 use crate::{

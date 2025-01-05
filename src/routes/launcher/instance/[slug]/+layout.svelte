@@ -40,7 +40,7 @@
 
 	<div class="mt-5 flex space-x-10 px-10 text-xl font-bold">
 		{#each data.sections as section}
-			<a href="/#/instance/{data.slug}/{section.slug}">{section.title}</a>
+			<a href="/#/launcher/instance/{data.slug}/{section.slug}">{section.title}</a>
 		{/each}
 	</div>
 

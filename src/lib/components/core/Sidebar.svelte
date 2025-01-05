@@ -82,7 +82,7 @@
 <Sidebar.Root collapsible="icon">
 	<div class="flex h-screen flex-col gap-y-4 p-4">
 		<Sidebar.Header class="text-zinc-100 hover:text-zinc-50">
-			<a href="/#/" class="font-bold">Glyph Launcher</a>
+			<a href="/#/launcher" class="font-bold">Glyph Launcher</a>
 			<Input type="text" placeholder="Search instances..." bind:value={searchInput} />
 			<Button variant="outline" onclick={() => goto("/#/launcher/instance/new")}>Add instance</Button>
 		</Sidebar.Header>
@@ -92,7 +92,7 @@
 				<div class="p-4">
 					<h4 class="mb-4 text-sm font-bold leading-none">Instances</h4>
 					{#each filteredInstances as instance}
-						<a href="/#/instance/{instance.slug}">
+						<a href="/#/launcher/instance/{instance.slug}">
 							<div>
 								<p class="text-sm">{instance.name}</p>
 							</div>

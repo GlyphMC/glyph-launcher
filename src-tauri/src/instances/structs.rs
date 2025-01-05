@@ -24,7 +24,7 @@ pub struct Game {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 struct Modloader {
     loader: String,
-    version: String,
+    version: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -39,4 +39,7 @@ pub struct Java {
 pub struct Settings {
     pub has_launched: bool,
     rich_presence: bool,
+    pub window_width: u32,
+    pub window_height: u32,
+    pub maximized: bool,
 }

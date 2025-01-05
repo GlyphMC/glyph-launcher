@@ -28,19 +28,22 @@ pub struct AssetObject {
 pub struct AssetManager {
     client: Client,
     assets_dir: PathBuf,
+    indexes_dir: PathBuf,
     objects_dir: PathBuf,
     libraries_dir: PathBuf,
 }
 
 impl AssetManager {
-    pub fn new(client: Client, minecraft_dir: &Path) -> Self {
-        let assets_dir = minecraft_dir.join("assets");
+    pub fn new(client: Client, config_dir: &Path) -> Self {
+        let assets_dir = config_dir.join("assets");
+        let indexes_dir = assets_dir.join("indexes");
         let objects_dir = assets_dir.join("objects");
-        let libraries_dir = minecraft_dir.join("libraries");
+        let libraries_dir = config_dir.join("libraries");
 
         Self {
             client,
             assets_dir,
+            indexes_dir,
             objects_dir,
             libraries_dir,
         }
@@ -48,6 +51,7 @@ impl AssetManager {
 
     pub async fn download_assets(&self, version_manifest: &VersionManifest) -> Result<(), Error> {
         create_dir_all(&self.assets_dir).await?;
+        create_dir_all(&self.indexes_dir).await?;
         create_dir_all(&self.objects_dir).await?;
 
         let asset_index = self
@@ -57,6 +61,16 @@ impl AssetManager {
             .await?
             .json::<AssetIndex>()
             .await?;
+
+        let index_path = self
+            .indexes_dir
+            .join(format!("{}.json", version_manifest.asset_index.id));
+
+        if !index_path.exists() {
+            let mut file = File::create(&index_path).await?;
+            let index_content = serde_json::to_string(&asset_index)?;
+            file.write_all(index_content.as_bytes()).await?;
+        }
 
         let total_assets = asset_index.objects.len();
         info!("Downloading {} assets", total_assets);
