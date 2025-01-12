@@ -7,19 +7,23 @@ use std::{
 
 use anyhow::{anyhow, Error, Result};
 use log::info;
-use tauri::State;
+use tauri::{AppHandle, Emitter, State};
 use walkdir::WalkDir;
 
 use crate::{
     config,
     instance::Instance,
     resources::{assets::AssetManager, version::get_version_manifest},
-    AppState,
+    AppState, Payload,
 };
 
 use super::version::VersionManifest;
 
-pub async fn launch(state: State<'_, AppState>, slug: &str) -> Result<(), Error> {
+pub async fn launch(
+    state: State<'_, AppState>,
+    handle: AppHandle,
+    slug: &str,
+) -> Result<(), Error> {
     info!("Launching instance: {}", slug);
 
     let client = state.client.lock().await.clone();
@@ -31,8 +35,15 @@ pub async fn launch(state: State<'_, AppState>, slug: &str) -> Result<(), Error>
     let version_manifest = get_version_manifest(&state, &instance.game.url).await?;
 
     if !instance.settings.has_launched {
+        handle.emit(
+            "instance-download-assets-started",
+            Payload {
+                message: "Download started",
+            },
+        )?;
+
         info!("Downloading assets for instance: {}", slug);
-        let asset_manager = AssetManager::new(client, &config_dir);
+        let asset_manager = AssetManager::new(client, &handle, &config_dir);
 
         let _ = asset_manager
             .download_assets(&version_manifest)
@@ -51,6 +62,13 @@ pub async fn launch(state: State<'_, AppState>, slug: &str) -> Result<(), Error>
             .await
             .map_err(|e| e.to_string());
         info!("Version JAR downloaded for instance: {}", slug);
+
+        handle.emit(
+            "instance-download-assets-finished",
+            Payload {
+                message: "Download finished",
+            },
+        )?;
     }
 
     launch_game(instance, &instance_dir, &version_manifest)?;

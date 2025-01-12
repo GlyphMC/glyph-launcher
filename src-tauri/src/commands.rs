@@ -143,8 +143,12 @@ pub async fn delete_instance(
 }
 
 #[tauri::command]
-pub async fn launch_instance(state: State<'_, AppState>, slug: &str) -> Result<(), ()> {
-    if let Err(e) = resources::launch::launch(state, slug).await {
+pub async fn launch_instance(
+    state: State<'_, AppState>,
+    handle: AppHandle,
+    slug: &str,
+) -> Result<(), ()> {
+    if let Err(e) = resources::launch::launch(state, handle, slug).await {
         eprintln!("Error launching instance: {:?}", e);
         return Err(());
     }

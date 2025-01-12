@@ -5,10 +5,13 @@
 	import { invoke } from "@tauri-apps/api/core";
 	import Clock from "lucide-svelte/icons/clock";
 	import { Button } from "$lib/components/ui/button";
+	import { listen } from "@tauri-apps/api/event";
+	import InstanceAssetsDownloadPopUp from "$lib/components/core/InstanceAssetsDownloadPopUp.svelte";
 
 	let { data, children }: { data: LayoutData; children: Snippet } = $props();
 	let instance = $state<Instance>();
 	let timePlayed = $state(0);
+	let showAssetsDownloadPopUp = $state(false);
 
 	async function fetchTimePlayed() {}
 
@@ -26,7 +29,14 @@
 		await fetchTimePlayed();
 		await getInstance();
 	});
+
+	listen("instance-download-assets-started", () => (showAssetsDownloadPopUp = true));
+	listen("instance-download-assets-finished", () => (showAssetsDownloadPopUp = false));
 </script>
+
+{#if showAssetsDownloadPopUp}
+	<InstanceAssetsDownloadPopUp />
+{/if}
 
 <div class="w-full overflow-hidden font-display">
 	<p class="mb-2 px-10 pt-10 text-3xl font-bold text-zinc-50">{instance?.name}</p>

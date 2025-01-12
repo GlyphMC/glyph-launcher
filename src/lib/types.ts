@@ -9,9 +9,9 @@ export type LoginDetailsEvent = {
 
 export type JavaPaths = string[];
 
-export type DownloadState = "none" | "downloading" | "done";
+export type JavaDownloadState = "none" | "downloading" | "done";
 
-export type ExtractState = "none" | "extracting" | "done";
+export type JavaExtractState = "none" | "extracting" | "done";
 
 export type JavaProgress = {
 	download: { [key: number]: number };
@@ -103,3 +103,9 @@ export type Version = {
 };
 
 export type Modloader = "Vanilla" | "Forge" | "Neoforge" | "Fabric" | "";
+
+export type AssetsDownloadState = "none" | "assets" | "libraries" | "version-jar" | "done";
+
+export type AssetsDownloadProgress = {
+	[key: string]: number;
+};

@@ -1,18 +1,25 @@
 use std::{
     collections::HashMap,
     path::{Path, PathBuf},
+    time::Instant,
 };
 
-use anyhow::{Error, Result};
+use anyhow::{anyhow, Error, Result};
 use log::info;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
+use tauri::{AppHandle, Emitter};
 use tokio::{
     fs::{create_dir_all, File},
     io::AsyncWriteExt,
 };
 
 use super::version::VersionManifest;
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct Progress {
+    pub percentage: f64,
+}
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct AssetIndex {
@@ -27,6 +34,7 @@ pub struct AssetObject {
 
 pub struct AssetManager {
     client: Client,
+    handle: AppHandle,
     assets_dir: PathBuf,
     indexes_dir: PathBuf,
     objects_dir: PathBuf,
@@ -34,7 +42,7 @@ pub struct AssetManager {
 }
 
 impl AssetManager {
-    pub fn new(client: Client, config_dir: &Path) -> Self {
+    pub fn new(client: Client, handle: &AppHandle, config_dir: &Path) -> Self {
         let assets_dir = config_dir.join("assets");
         let indexes_dir = assets_dir.join("indexes");
         let objects_dir = assets_dir.join("objects");
@@ -42,6 +50,7 @@ impl AssetManager {
 
         Self {
             client,
+            handle: handle.clone(),
             assets_dir,
             indexes_dir,
             objects_dir,
@@ -73,6 +82,9 @@ impl AssetManager {
         }
 
         let total_assets = asset_index.objects.len();
+        let mut downloaded_assets = 0;
+        let mut last_emit_time = Instant::now();
+
         info!("Downloading {} assets", total_assets);
 
         for (_asset_name, asset_object) in asset_index.objects {
@@ -89,11 +101,25 @@ impl AssetManager {
                 );
                 let mut response = self.client.get(&url).send().await?;
                 let mut file = File::create(&asset_path).await?;
+
                 while let Some(chunk) = response.chunk().await? {
                     file.write_all(&chunk).await?;
                 }
             }
+
+            downloaded_assets += 1;
+            if last_emit_time.elapsed().as_secs() >= 1 {
+                let percentage = (downloaded_assets as f64 / total_assets as f64) * 100.0;
+                self.handle
+                    .emit("instance-download-assets-progress", Progress { percentage })?;
+                last_emit_time = Instant::now();
+            }
         }
+
+        self.handle.emit(
+            "instance-download-assets-progress",
+            Progress { percentage: 100.0 },
+        )?;
 
         Ok(())
     }
@@ -103,6 +129,10 @@ impl AssetManager {
         version_manifest: &VersionManifest,
     ) -> Result<(), Error> {
         create_dir_all(&self.libraries_dir).await?;
+
+        let total_libraries = version_manifest.libraries.len();
+        let mut downloaded_libraries = 0;
+        let mut last_emit_time = Instant::now();
 
         for library in &version_manifest.libraries {
             // info!("Downloading library: {}", library.name);
@@ -118,7 +148,22 @@ impl AssetManager {
                     file.write_all(&chunk).await?;
                 }
             }
+
+            downloaded_libraries += 1;
+            if last_emit_time.elapsed().as_secs() >= 1 {
+                let percentage = (downloaded_libraries as f64 / total_libraries as f64) * 100.0;
+                self.handle.emit(
+                    "instance-download-libraries-progress",
+                    Progress { percentage },
+                )?;
+                last_emit_time = Instant::now();
+            }
         }
+
+        self.handle.emit(
+            "instance-download-libraries-progress",
+            Progress { percentage: 100.0 },
+        )?;
 
         Ok(())
     }
@@ -146,9 +191,31 @@ impl AssetManager {
                 .send()
                 .await?;
             let mut file = File::create(&jar_path).await?;
+
+            let total_size = response
+                .content_length()
+                .ok_or(anyhow!("Failed to get JAR size"))?;
+            let mut downloaded_size = 0;
+            let mut last_emit_time = Instant::now();
+
             while let Some(chunk) = response.chunk().await? {
                 file.write_all(&chunk).await?;
+                downloaded_size += chunk.len() as u64;
+
+                if last_emit_time.elapsed().as_secs() >= 1 {
+                    let percentage = (downloaded_size as f64 / total_size as f64) * 100.0;
+                    self.handle.emit(
+                        "instance-download-version-jar-progress",
+                        Progress { percentage },
+                    )?;
+                    last_emit_time = Instant::now();
+                }
             }
+
+            self.handle.emit(
+                "instance-download-version-jar-progress",
+                Progress { percentage: 100.0 },
+            )?;
         } else {
             info!(
                 "Minecraft version JAR already downloaded: {}",

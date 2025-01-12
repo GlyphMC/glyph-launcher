@@ -1,15 +1,15 @@
 <script lang="ts">
 	import * as Card from "$lib/components/ui/card";
 	import { Button } from "$lib/components/ui/button";
-	import ProgressBars from "$lib/components/core/ProgressBars.svelte";
-	import type { DownloadState, ExtractState, ProgressEvent, JavaProgress, JavaPaths, DownloadPaths } from "$lib/types";
+	import { ProgressBar } from "./ProgressBar.svelte";
+	import type { JavaDownloadState, JavaExtractState, ProgressEvent, JavaProgress, JavaPaths, DownloadPaths } from "$lib/types";
 	import { saveJavaToConfig } from "$lib/utils";
 	import { onMount } from "svelte";
 	import { listen } from "@tauri-apps/api/event";
 	import { invoke } from "@tauri-apps/api/core";
 
-	let downloadState = $state<DownloadState>("none");
-	let extractState = $state<ExtractState>("none");
+	let downloadState = $state<JavaDownloadState>("none");
+	let extractState = $state<JavaExtractState>("none");
 	let paths = $state<string[]>([]);
 	let javaProgress = $state<JavaProgress>({
 		download: { 8: 0, 17: 0, 21: 0 },
@@ -50,7 +50,7 @@
 		});
 	}
 
-	function getStatusText(download: DownloadState, extract: ExtractState): string {
+	function getStatusText(download: JavaDownloadState, extract: JavaExtractState): string {
 		if (download === "downloading") {
 			return "Downloading:";
 		} else if (download === "done") {
@@ -99,7 +99,11 @@
 		</Card.Header>
 
 		<Card.Content>
-			<ProgressBars java8Progress={currentProgress[8]} java17Progress={currentProgress[17]} java21Progress={currentProgress[21]} />
+			<div class="flex flex-col space-y-2">
+				{@render ProgressBar(currentProgress[8], "Java 8")}
+				{@render ProgressBar(currentProgress[17], "Java 17")}
+				{@render ProgressBar(currentProgress[21], "Java 21")}
+			</div>
 		</Card.Content>
 
 		<Card.Footer class="flex justify-center">
