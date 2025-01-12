@@ -9,10 +9,7 @@ use crate::{
         account::{Account, Profile},
     },
     config,
-    instances::{
-        self,
-        structs::{Instance, InstanceConfig},
-    },
+    instance::Instance,
     java::{self, structs::JavaConfig, test::JavaTestInfo},
     resources::{self, versions::Version},
     AppState,
@@ -109,53 +106,44 @@ pub fn get_java_from_config() -> Result<JavaConfig, ()> {
 }
 
 #[tauri::command]
-pub fn get_instances() -> Result<InstanceConfig, ()> {
-    let instance_config = instances::instance::get_instances().unwrap();
-    Ok(instance_config)
+pub async fn get_instances(state: State<'_, AppState>) -> Result<Vec<Instance>, ()> {
+    let instances_lock = state.instances.lock().await;
+    Ok(instances_lock.get_instances())
 }
 
 #[tauri::command]
-pub fn get_instance(slug: String) -> Result<Instance, ()> {
-    let instance = instances::instance::get_instance(&slug).unwrap();
-    Ok(instance)
+pub async fn get_instance(state: State<'_, AppState>, slug: &str) -> Result<Instance, ()> {
+    let instances_lock = state.instances.lock().await;
+    Ok(instances_lock.get_instance(slug).unwrap())
 }
 
 #[tauri::command]
-pub async fn create_instance(
+pub async fn create_instance(state: State<'_, AppState>, instance: Instance) -> Result<(), ()> {
+    let mut instances_lock = state.instances.lock().await;
+    instances_lock.add_instance(&state, instance).await.unwrap();
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn update_instance(state: State<'_, AppState>, instance: Instance) -> Result<(), ()> {
+    let mut instances_lock = state.instances.lock().await;
+    instances_lock.update_instance(instance).unwrap();
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn delete_instance(
     state: State<'_, AppState>,
     handle: AppHandle,
-    instance: Instance,
+    slug: &str,
 ) -> Result<(), ()> {
-    if let Err(e) = instances::instance::create_instance(state, handle, instance).await {
-        eprintln!("Error creating instance: {:?}", e);
-        return Err(());
-    }
-
+    let mut instances_lock = state.instances.lock().await;
+    instances_lock.delete_instance(handle, slug).unwrap();
     Ok(())
 }
 
 #[tauri::command]
-pub fn update_instance(instance: Instance) -> Result<(), ()> {
-    if let Err(e) = instances::instance::update_instance(instance) {
-        eprintln!("Error updating instance: {:?}", e);
-        return Err(());
-    }
-
-    Ok(())
-}
-
-#[tauri::command]
-pub fn delete_instance(handle: AppHandle, slug: String) -> Result<(), ()> {
-    if let Err(e) = instances::instance::delete_instance(handle, slug) {
-        eprintln!("Error deleting instance: {:?}", e);
-        return Err(());
-    }
-
-    Ok(())
-}
-
-#[tauri::command]
-pub async fn launch_instance(state: State<'_, AppState>, slug: String) -> Result<(), ()> {
+pub async fn launch_instance(state: State<'_, AppState>, slug: &str) -> Result<(), ()> {
     if let Err(e) = resources::launch::launch(state, slug).await {
         eprintln!("Error launching instance: {:?}", e);
         return Err(());

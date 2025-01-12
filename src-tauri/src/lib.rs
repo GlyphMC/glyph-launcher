@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
 use auth::auth::LoginHandle;
-use instances::instance;
-use log::info;
+use instance::InstanceConfig;
+use log::{error, info};
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use tauri::Manager;
@@ -11,7 +11,7 @@ use tokio::sync::Mutex;
 mod auth;
 mod commands;
 mod config;
-mod instances;
+mod instance;
 mod java;
 mod resources;
 
@@ -22,6 +22,7 @@ pub struct Payload<'a> {
 
 pub struct AppState {
     client: Arc<Mutex<Client>>,
+    instances: Arc<Mutex<InstanceConfig>>,
     login_handle: LoginHandle,
 }
 
@@ -40,10 +41,15 @@ pub fn run() {
         .plugin(tauri_plugin_clipboard_manager::init())
         .manage({
             let client = Arc::new(Mutex::new(Client::new()));
+            let instances = Arc::new(Mutex::new(
+                InstanceConfig::read_from_file()
+                    .unwrap_or_else(|_| InstanceConfig { instances: vec![] }),
+            ));
             let login_handle = LoginHandle::new();
 
             AppState {
                 client,
+                instances,
                 login_handle,
             }
         })
@@ -66,7 +72,9 @@ pub fn run() {
 
             if first_launch {
                 config::create_default_config_file()?;
-                instance::create_default_instances_file()?;
+                if let Err(err) = InstanceConfig::create_default_file() {
+                    error!("Failed to create default instance config file: {:?}", err);
+                }
             }
 
             let config = config::get_config()?;

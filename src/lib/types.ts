@@ -39,10 +39,6 @@ export type ProgressEvent = {
 	percentage: number;
 };
 
-export type InstanceConfig = {
-	instances: Instance[];
-};
-
 export type Instance = {
 	name: string;
 	slug: string;
@@ -57,7 +53,7 @@ export type Instance = {
 	java: {
 		path: string;
 		args: string[];
-		version: string;
+		version: number;
 	};
 	settings: {
 		hasLaunched: boolean;

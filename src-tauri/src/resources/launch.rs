@@ -12,43 +12,45 @@ use walkdir::WalkDir;
 
 use crate::{
     config,
-    instances::{instance, structs::Instance},
+    instance::Instance,
     resources::{assets::AssetManager, version::get_version_manifest},
     AppState,
 };
 
 use super::version::VersionManifest;
 
-pub async fn launch(state: State<'_, AppState>, slug: String) -> Result<(), Error> {
-    info!("Launching instance: {}", &slug);
+pub async fn launch(state: State<'_, AppState>, slug: &str) -> Result<(), Error> {
+    info!("Launching instance: {}", slug);
 
     let client = state.client.lock().await.clone();
+    let instances_lock = state.instances.lock().await;
+
     let config_dir = config::get_config_dir()?;
-    let instance = instance::get_instance(&slug)?;
-    let instance_dir = instance::get_instances_path()?.join(&slug);
-    let version_manifest = get_version_manifest(state, &instance.game.url).await?;
+    let instance = instances_lock.get_instance(slug).unwrap();
+    let instance_dir = config_dir.join("instances").join(slug);
+    let version_manifest = get_version_manifest(&state, &instance.game.url).await?;
 
     if !instance.settings.has_launched {
-        info!("Downloading assets for instance: {}", &slug);
+        info!("Downloading assets for instance: {}", slug);
         let asset_manager = AssetManager::new(client, &config_dir);
 
         let _ = asset_manager
             .download_assets(&version_manifest)
             .await
             .map_err(|e| e.to_string());
-        info!("Assets downloaded for instance: {}", &slug);
+        info!("Assets downloaded for instance: {}", slug);
 
         let _ = asset_manager
             .download_libraries(&version_manifest)
             .await
             .map_err(|e| e.to_string());
-        info!("Libraries downloaded for instance: {}", &slug);
+        info!("Libraries downloaded for instance: {}", slug);
 
         let _ = asset_manager
             .download_version_jar(&version_manifest)
             .await
             .map_err(|e| e.to_string());
-        info!("Version JAR downloaded for instance: {}", &slug);
+        info!("Version JAR downloaded for instance: {}", slug);
     }
 
     launch_game(instance, &instance_dir, &version_manifest)?;

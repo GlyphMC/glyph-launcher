@@ -164,7 +164,7 @@ pub struct VersionManifest {
 }
 
 pub async fn get_version_manifest(
-    state: State<'_, AppState>,
+    state: &State<'_, AppState>,
     url: &String,
 ) -> Result<VersionManifest, Error> {
     let client = state.client.lock().await;

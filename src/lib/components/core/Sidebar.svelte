@@ -5,7 +5,7 @@
 	import * as DropdownMenu from "$lib/components/ui/dropdown-menu";
 	import { ScrollArea } from "$lib/components/ui/scroll-area";
 	import { Separator } from "$lib/components/ui/separator";
-	import type { Instance, InstanceConfig, LoginDetailsEvent, MinecraftProfile } from "$lib/types";
+	import type { Instance, LoginDetailsEvent, MinecraftProfile } from "$lib/types";
 	import { invoke } from "@tauri-apps/api/core";
 	import { listen } from "@tauri-apps/api/event";
 	import ChevronUp from "lucide-svelte/icons/chevron-up";
@@ -23,8 +23,8 @@
 	let showPopUp = $state(false);
 
 	async function fetchInstances() {
-		await invoke<InstanceConfig>("get_instances").then((data) => {
-			instances = data.instances;
+		await invoke<Instance[]>("get_instances").then((data) => {
+			instances = data;
 			filterInstances();
 		});
 	}

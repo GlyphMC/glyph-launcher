@@ -57,7 +57,7 @@
 			java: {
 				path: "",
 				args: [],
-				version: ""
+				version: 0
 			},
 			settings: {
 				hasLaunched: false,
