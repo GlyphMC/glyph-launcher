@@ -50,7 +50,7 @@
 		"@tauri-apps/plugin-clipboard-manager": "^2.2.0",
 		"@tauri-apps/plugin-dialog": "~2.2.0",
 		"@tauri-apps/plugin-os": "~2.2.0",
-		"@tauri-apps/plugin-shell": "~2.2.0",
+		"@tauri-apps/plugin-shell": "~2.2.1",
 		"mode-watcher": "^0.5.0"
 	}
 }
