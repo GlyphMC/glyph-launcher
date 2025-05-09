@@ -62,6 +62,8 @@ export type Instance = {
 		memory: number;
 		windowWidth: number;
 		windowHeight: number;
+		timePlayed: number;
+		lastPlayed?: string | null;
 	};
 };
 
@@ -90,6 +92,14 @@ export type MinecraftProfile = {
 			alias: string;
 		}
 	];
+};
+
+export type Account = {
+	active: boolean;
+	expiry: number;
+	access_token: string;
+	refresh_token: string;
+	profile: MinecraftProfile;
 };
 
 export type Version = {

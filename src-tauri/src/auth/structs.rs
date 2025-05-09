@@ -27,7 +27,7 @@ pub struct AuthorizationTokenResponse {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct RefreshTokenResponse {
     pub access_token: String,
-    refresh_token: String,
+    pub refresh_token: String,
     scope: String,
     pub expires_in: u32,
 }

@@ -4,13 +4,13 @@ use std::{
     time::Instant,
 };
 
-use anyhow::{anyhow, Error, Result};
+use anyhow::{Error, Result, anyhow};
 use log::info;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Emitter};
 use tokio::{
-    fs::{create_dir_all, File},
+    fs::{File, create_dir_all},
     io::AsyncWriteExt,
 };
 

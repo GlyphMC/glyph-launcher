@@ -53,6 +53,7 @@ pub fn save_java_to_config(
             java_21_path: processed_paths.2.to_string_lossy().to_string(),
         },
         completed_onboarding: config.completed_onboarding,
+        use_discrete_gpu: config.use_discrete_gpu,
     };
 
     config::save_config(&new_config)?;

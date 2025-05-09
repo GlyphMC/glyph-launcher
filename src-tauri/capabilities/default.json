@@ -3,7 +3,7 @@
   "identifier": "default",
   "description": "enables the default permissions",
   "windows": [
-    "main"
+    "main", "*-log"
   ],
   "permissions": [
     "core:default",
@@ -13,6 +13,9 @@
     "core:window:allow-unmaximize",
     "core:window:allow-close",
     "core:window:allow-start-dragging",
+	"core:window:allow-show",
+	"core:window:allow-set-focus",
+	"core:webview:allow-create-webview-window",
     "clipboard-manager:allow-write-text",
     "shell:allow-open",
     "os:default",

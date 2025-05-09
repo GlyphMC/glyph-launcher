@@ -4,19 +4,54 @@
 	import type { Instance } from "$lib/types";
 	import { invoke } from "@tauri-apps/api/core";
 	import Clock from "lucide-svelte/icons/clock";
+	import CalendarClock from "lucide-svelte/icons/calendar-clock";
+	import SquareChevronRight from "lucide-svelte/icons/square-chevron-right";
 	import { Button } from "$lib/components/ui/button";
-	import { listen } from "@tauri-apps/api/event";
 	import InstanceAssetsDownloadPopUp from "$lib/components/core/InstanceAssetsDownloadPopUp.svelte";
+	import { formatDistanceToNow, parseISO } from "date-fns";
+	import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
 
 	let { data, children }: { data: LayoutData; children: Snippet } = $props();
 	let instance = $state<Instance>();
-	let timePlayed = $state(0);
 	let showAssetsDownloadPopUp = $state(false);
 
-	async function fetchTimePlayed() {}
+	function formatTimePlayed(totalSeconds: number): string {
+		if (totalSeconds === undefined || totalSeconds === null || totalSeconds === 0) return "Never";
+		if (totalSeconds < 60) {
+			return `${totalSeconds} sec played`;
+		}
+		const minutes = Math.floor(totalSeconds / 60);
+		const hours = Math.floor(minutes / 60);
+		const remainingMinutes = minutes % 60;
+
+		if (hours > 0) {
+			return `${hours} hr ${remainingMinutes} min played`;
+		}
+		return `${minutes} min played`;
+	}
+
+	function formatLastPlayed(isoTimestamp?: string | null): string {
+		if (!isoTimestamp) {
+			return "Never";
+		}
+
+		try {
+			const date = parseISO(isoTimestamp);
+			return formatDistanceToNow(date, { addSuffix: true });
+		} catch (e) {
+			console.error("Error parsing lastPlayed date:", e);
+			return "Invalid date";
+		}
+	}
 
 	async function launchInstance() {
-		await invoke("launch_instance", { slug: data.slug });
+		try {
+			await invoke("launch_instance", { slug: data.slug });
+		} catch (error) {
+			console.error("Failed to launch instance:", error);
+		} finally {
+			await getInstance();
+		}
 	}
 
 	async function getInstance() {
@@ -25,13 +60,42 @@
 		});
 	}
 
+	async function openLogWindow() {
+		console.log("Opening log window");
+
+		const label = `${instance?.slug}-log`.replaceAll(".", "_");
+		console.log("Log window label:", label);
+
+		let logWebview = await WebviewWindow.getByLabel(label);
+
+		if (logWebview) {
+			try {
+				await logWebview.show();
+				await logWebview.setFocus();
+			} catch (error) {
+				console.error("Error showing log window:", error);
+			}
+		} else {
+			logWebview = new WebviewWindow(label, {
+				url: `/#/launcher/instance/${data.slug}/log`,
+				resizable: true,
+				alwaysOnTop: false,
+				visible: true,
+				title: `${instance?.name} - Logs`,
+				width: 750,
+				height: 400,
+				minWidth: 750,
+				decorations: false
+			});
+		}
+
+		await logWebview.once("tauri://window-created", () => console.log("Log webview created"));
+		await logWebview.once("tauri://error", (e) => console.error("Log webview error:", e));
+	}
+
 	onMount(async () => {
-		await fetchTimePlayed();
 		await getInstance();
 	});
-
-	listen("instance-download-assets-started", () => (showAssetsDownloadPopUp = true));
-	listen("instance-download-assets-finished", () => (showAssetsDownloadPopUp = false));
 </script>
 
 {#if showAssetsDownloadPopUp}
@@ -41,12 +105,24 @@
 <div class="w-full overflow-hidden font-display">
 	<p class="mb-2 px-10 pt-10 text-3xl font-bold text-zinc-50">{instance?.name}</p>
 
-	<div class="flex items-center px-10 text-sm text-zinc-300">
-		<Clock class="mr-2" />
-		<p>{timePlayed} played</p>
+	<div class="px-10 text-sm text-zinc-300">
+		<div class="flex items-center">
+			<Clock class="mr-2 size-4" />
+			<p>Time played: {formatTimePlayed(instance?.settings?.timePlayed ?? 0)}</p>
+		</div>
+
+		<div class="mt-1 flex items-center">
+			<CalendarClock class="mr-2 size-4" />
+			<p>Last played: {formatLastPlayed(instance?.settings?.lastPlayed)}</p>
+		</div>
 	</div>
 
-	<Button class="ml-10 mt-8 w-24 px-10" onclick={launchInstance}>Launch</Button>
+	<div class="ml-10 mt-8 flex space-x-2">
+		<Button class="w-24 px-10" onclick={launchInstance}>Launch</Button>
+		<Button variant="outline" class="w-24 px-10" onclick={openLogWindow}>
+			<SquareChevronRight /> Logs
+		</Button>
+	</div>
 
 	<div class="mt-5 flex space-x-10 px-10 text-xl font-bold">
 		{#each data.sections as section}

@@ -5,6 +5,11 @@
 	import "../app.pcss";
 
 	let { children }: { children: Snippet } = $props();
+
+	// Disable right-click context menu
+	document.addEventListener("contextmenu", (event) => {
+		event.preventDefault();
+	});
 </script>
 
 <ModeWatcher />

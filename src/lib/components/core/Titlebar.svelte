@@ -3,23 +3,35 @@
 	import ChevronUp from "lucide-svelte/icons/chevron-up";
 	import ChevronDown from "lucide-svelte/icons/chevron-down";
 	import X from "lucide-svelte/icons/x";
+	import { Component } from "lucide-svelte";
 	import { getCurrentWindow } from "@tauri-apps/api/window";
+	import { onMount } from "svelte";
 
 	let maximized = $state(false);
 
+	onMount(() => {
+		// Check if the window is maximized on mount
+		getCurrentWindow()
+			.isMaximized()
+			.then((isMaximized) => {
+				maximized = isMaximized;
+			});
+	});
+
 	async function minimizeWindow() {
-		let window = getCurrentWindow();
+		const window = getCurrentWindow();
 		await window.minimize();
 	}
 
 	async function maximizeWindow() {
-		let window = getCurrentWindow();
-		maximized = await window.isMaximized();
-		if (maximized) {
+		const window = getCurrentWindow();
+		const isCurrentlyMaximized = await window.isMaximized();
+		if (isCurrentlyMaximized) {
 			await window.unmaximize();
 		} else {
 			await window.maximize();
 		}
+		maximized = !isCurrentlyMaximized;
 	}
 
 	async function closeWindow() {
@@ -28,7 +40,7 @@
 	}
 </script>
 
-{#snippet titlebarButton(IconComponent: any, onclick: () => void)}
+{#snippet titlebarButton(IconComponent: typeof Component, onclick: () => void)}
 	<button class="text-zinc-100 duration-150 hover:text-zinc-50" {onclick}>
 		<IconComponent class="h-5 w-5" />
 	</button>

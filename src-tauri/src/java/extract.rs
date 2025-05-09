@@ -1,9 +1,9 @@
 use std::path::{Component, PathBuf};
 
-use anyhow::{anyhow, Error, Ok, Result};
+use anyhow::{Error, Ok, Result, anyhow};
 use async_zip::tokio::read::seek::ZipFileReader;
 use log::info;
-use tauri::{async_runtime::spawn, AppHandle, Emitter};
+use tauri::{AppHandle, Emitter, async_runtime::spawn};
 use tokio::{
     fs::{self, File},
     io::{self, BufReader},
@@ -11,7 +11,7 @@ use tokio::{
 };
 use tokio_util::compat::FuturesAsyncReadCompatExt;
 
-use crate::{java::structs::Progress, Payload};
+use crate::{Payload, java::structs::Progress};
 
 pub async fn extract_java(
     handle: AppHandle,
@@ -82,7 +82,7 @@ async fn extract_java_archive(
         .file()
         .entries()
         .iter()
-        .map(|e| e.compressed_size() as u64)
+        .map(|e| e.compressed_size())
         .sum();
 
     let mut extracted_size = 0;
@@ -118,7 +118,7 @@ async fn extract_java_archive(
             io::copy(&mut entry_reader, &mut output_file).await?;
         }
 
-        extracted_size += entry.uncompressed_size() as u64;
+        extracted_size += entry.uncompressed_size();
 
         if last_emit_time.elapsed().as_secs() >= 1 {
             let percentage = (extracted_size as f64 / total_size as f64) * 100.0;

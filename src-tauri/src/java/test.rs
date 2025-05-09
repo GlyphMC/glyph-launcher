@@ -39,7 +39,7 @@ pub fn test_java(
         JavaTestInfo::default(),
     );
 
-    for (i, (ref mut path, expected_version)) in paths.iter_mut().enumerate() {
+    for (i, (path, expected_version)) in paths.iter_mut().enumerate() {
         let mut info = JavaTestInfo::default();
         info.expected_version = *expected_version;
 
@@ -54,7 +54,7 @@ pub fn test_java(
 
             for line in output_str.lines() {
                 if let Some(value) = line.trim().strip_prefix("java.version = ") {
-                    if let Some(version_num) = extract_major_version(&value) {
+                    if let Some(version_num) = extract_major_version(value) {
                         info.version = version_num;
                         info.version_mismatch = version_num != info.expected_version;
                     }

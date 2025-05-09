@@ -1,8 +1,9 @@
 use std::{fs, path::PathBuf};
 
-use anyhow::{anyhow, Error, Result};
+use anyhow::{Error, Result, anyhow};
 use dirs::config_dir;
 use serde::{Deserialize, Serialize};
+use tauri::AppHandle;
 
 use crate::{auth::account::Account, java::structs::JavaConfig};
 
@@ -13,6 +14,15 @@ pub struct Config {
     pub rich_presence: bool,
     pub java: JavaConfig,
     pub completed_onboarding: bool,
+    #[serde(default)]
+    pub use_discrete_gpu: bool,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct LauncherSettings {
+    pub rich_presence: bool,
+    pub use_discrete_gpu: bool,
 }
 
 fn create_config_file(config: &Config) -> Result<(), Error> {
@@ -59,6 +69,7 @@ pub fn create_default_config_file() -> Result<(), Error> {
         rich_presence: true,
         java: JavaConfig::default(),
         completed_onboarding: false,
+        use_discrete_gpu: true,
     };
 
     create_config_file(&default_config)
@@ -81,5 +92,17 @@ pub fn set_onboarding_complete() -> Result<(), Error> {
     let mut config = get_config()?;
     config.completed_onboarding = true;
     save_config(&config)?;
+    Ok(())
+}
+
+pub fn update_launcher_settings(
+    _handle: &AppHandle,
+    new_settings: &LauncherSettings,
+) -> Result<(), Error> {
+    let mut config = get_config()?;
+    config.rich_presence = new_settings.rich_presence;
+    config.use_discrete_gpu = new_settings.use_discrete_gpu;
+    save_config(&config)?; // Maybe need to emit an event here for the frontend
+
     Ok(())
 }

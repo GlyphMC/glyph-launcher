@@ -20,7 +20,7 @@
 	let isModloaderVersionDisabled = $state(true);
 	let discordRichPresence = $state(true);
 	let startMaximized = $state(false);
-	let ram = $state([4096]);
+	let ram = $state(4096);
 
 	async function getVersions() {
 		invoke<Version[]>("get_versions").then((data) => {
@@ -41,7 +41,7 @@
 	let versionTrigger = $derived(versions.find((v) => v.id === selectedVersion?.id)?.id ?? "Select a version");
 	let modloaderTrigger = $derived(modloader ? modloader : "Select a modloader");
 
-	let isButtonDisabled = $derived(!instanceName || !selectedVersionId || !modloader || ram[0] <= 0);
+	let isButtonDisabled = $derived(!instanceName || !selectedVersionId || !modloader || ram <= 0);
 
 	async function createInstance(version: Version) {
 		let instance: Instance = {
@@ -63,9 +63,10 @@
 				hasLaunched: false,
 				richPresence: discordRichPresence,
 				maximized: startMaximized,
-				memory: parseInt(ram.join("")),
+				memory: ram,
 				windowWidth: 854,
-				windowHeight: 480
+				windowHeight: 480,
+				timePlayed: 0
 			}
 		};
 		await invoke("create_instance", { instance }).then(() => {
@@ -141,8 +142,8 @@
 		</div>
 		<div class="inline-flex items-center space-x-5 py-2">
 			<Label>RAM</Label>
-			<Slider bind:value={ram} max={10240} step={1024} class="w-60" />
-			<NumberFlow value={ram[0]} format={{ useGrouping: false }} suffix=" MB" />
+			<Slider bind:value={ram} max={10240} step={1024} class="w-60" type="single" />
+			<NumberFlow value={ram} format={{ useGrouping: false }} suffix=" MB" />
 		</div>
 		<Button onclick={() => selectedVersion && createInstance(selectedVersion)} disabled={isButtonDisabled} class="h-10 w-20">Create</Button>
 	</div>

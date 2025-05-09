@@ -1,10 +1,11 @@
 use std::{fs, path::PathBuf};
 
-use anyhow::{anyhow, Error, Result};
+use anyhow::{Error, Result, anyhow};
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Emitter, State};
 
-use crate::{config, resources::version, AppState, Payload};
+use crate::{AppState, Payload, config, resources::version};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct InstanceConfig {
@@ -44,10 +45,14 @@ pub struct Java {
 #[serde(rename_all = "camelCase")]
 pub struct Settings {
     pub has_launched: bool,
-    rich_presence: bool,
+    pub rich_presence: bool,
     pub window_width: u32,
     pub window_height: u32,
     pub maximized: bool,
+    #[serde(default)]
+    pub time_played: u64,
+    #[serde(default)]
+    pub last_played: Option<DateTime<Utc>>,
 }
 
 impl InstanceConfig {
@@ -105,6 +110,7 @@ impl InstanceConfig {
     pub async fn add_instance(
         &mut self,
         state: &State<'_, AppState>,
+        handle: AppHandle,
         mut instance: Instance,
     ) -> Result<(), Error> {
         let manifest = version::get_version_manifest(state, &instance.game.url).await?;
@@ -138,15 +144,33 @@ impl InstanceConfig {
         }
 
         self.instances.push(instance);
-        self.write_to_file()
+        self.write_to_file()?;
+
+        handle.emit(
+            "instance-list-updated",
+            Payload {
+                message: "Instance added",
+            },
+        )?;
+
+        Ok(())
     }
 
-    pub fn update_instance(&mut self, instance: Instance) -> Result<(), Error> {
+    pub fn update_instance(&mut self, handle: AppHandle, instance: Instance) -> Result<(), Error> {
         self.instances
             .iter_mut()
             .find(|i| i.slug == instance.slug)
             .map(|i| *i = instance);
-        self.write_to_file()
+        self.write_to_file()?;
+
+        handle.emit(
+            "instance-list-updated",
+            Payload {
+                message: "Instance updated",
+            },
+        )?;
+
+        Ok(())
     }
 
     pub fn delete_instance(&mut self, handle: AppHandle, slug: &str) -> Result<(), Error> {

@@ -1,27 +1,31 @@
 use std::path::PathBuf;
 
 use anyhow::Result;
-use tauri::{AppHandle, State};
+use tauri::{AppHandle, Manager, State};
 
 use crate::{
+    AppState,
     auth::{
         self,
         account::{Account, Profile},
     },
-    config,
+    config::{self, LauncherSettings},
+    discord,
     instance::Instance,
     java::{self, structs::JavaConfig, test::JavaTestInfo},
     resources::{self, versions::Version},
-    AppState,
 };
 
 #[tauri::command]
 pub async fn login(state: State<'_, AppState>, handle: AppHandle) -> Result<Profile, ()> {
     let login_handle = state.login_handle.clone();
-    let profile = auth::auth::login(&state, handle, login_handle)
-        .await
-        .unwrap();
-    Ok(profile.into())
+    match auth::auth::login(&state, handle, login_handle).await {
+        Ok(profile_response) => Ok(profile_response.into()),
+        Err(e) => {
+            log::error!("Login failed: {}", e);
+            Err(())
+        }
+    }
 }
 
 #[tauri::command]
@@ -118,16 +122,27 @@ pub async fn get_instance(state: State<'_, AppState>, slug: &str) -> Result<Inst
 }
 
 #[tauri::command]
-pub async fn create_instance(state: State<'_, AppState>, instance: Instance) -> Result<(), ()> {
+pub async fn create_instance(
+    state: State<'_, AppState>,
+    handle: AppHandle,
+    instance: Instance,
+) -> Result<(), ()> {
     let mut instances_lock = state.instances.lock().await;
-    instances_lock.add_instance(&state, instance).await.unwrap();
+    instances_lock
+        .add_instance(&state, handle, instance)
+        .await
+        .unwrap();
     Ok(())
 }
 
 #[tauri::command]
-pub async fn update_instance(state: State<'_, AppState>, instance: Instance) -> Result<(), ()> {
+pub async fn update_instance(
+    state: State<'_, AppState>,
+    handle: AppHandle,
+    instance: Instance,
+) -> Result<(), ()> {
     let mut instances_lock = state.instances.lock().await;
-    instances_lock.update_instance(instance).unwrap();
+    instances_lock.update_instance(handle, instance).unwrap();
     Ok(())
 }
 
@@ -135,10 +150,10 @@ pub async fn update_instance(state: State<'_, AppState>, instance: Instance) -> 
 pub async fn delete_instance(
     state: State<'_, AppState>,
     handle: AppHandle,
-    slug: &str,
+    slug: String,
 ) -> Result<(), ()> {
     let mut instances_lock = state.instances.lock().await;
-    instances_lock.delete_instance(handle, slug).unwrap();
+    instances_lock.delete_instance(handle, &slug).unwrap();
     Ok(())
 }
 
@@ -146,9 +161,9 @@ pub async fn delete_instance(
 pub async fn launch_instance(
     state: State<'_, AppState>,
     handle: AppHandle,
-    slug: &str,
+    slug: String,
 ) -> Result<(), ()> {
-    if let Err(e) = resources::launch::launch(state, handle, slug).await {
+    if let Err(e) = resources::launch::launch(state, handle, &slug).await {
         eprintln!("Error launching instance: {:?}", e);
         return Err(());
     }
@@ -160,4 +175,40 @@ pub async fn launch_instance(
 pub async fn get_versions(state: State<'_, AppState>) -> Result<Vec<Version>, ()> {
     let versions = resources::versions::get_versions(state).await.unwrap();
     Ok(versions)
+}
+
+#[tauri::command]
+pub fn set_discord_activity(
+    state: State<'_, AppState>,
+    details: String,
+    status: String,
+) -> Result<(), ()> {
+    discord::set_activity(state.discord_client.clone(), details, status);
+    Ok(())
+}
+
+#[tauri::command]
+pub fn toggle_discord_rpc(state: State<'_, AppState>, enabled: bool) -> Result<(), ()> {
+    discord::toggle_rpc(state.discord_client.clone(), enabled);
+
+    Ok(())
+}
+
+#[tauri::command]
+pub fn get_launcher_settings() -> Result<LauncherSettings, String> {
+    let config = config::get_config().map_err(|e| e.to_string())?;
+    Ok(LauncherSettings {
+        rich_presence: config.rich_presence,
+        use_discrete_gpu: config.use_discrete_gpu,
+    })
+}
+
+#[tauri::command]
+pub fn save_launcher_settings(handle: AppHandle, settings: LauncherSettings) -> Result<(), String> {
+    config::update_launcher_settings(&handle, &settings).map_err(|e| e.to_string())?;
+
+    let discord_client_arc = handle.state::<AppState>().discord_client.clone();
+    discord::toggle_rpc(discord_client_arc, settings.rich_presence);
+
+    Ok(())
 }

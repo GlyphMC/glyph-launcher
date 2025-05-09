@@ -1,16 +1,15 @@
 use std::{env, path::PathBuf};
 
-use anyhow::{anyhow, Error, Result};
+use anyhow::{Error, Result, anyhow};
 use log::{debug, info};
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
-use tauri::{async_runtime::spawn, AppHandle, Emitter, State};
+use tauri::{AppHandle, Emitter, State, async_runtime::spawn};
 use tokio::{fs::File, io::AsyncWriteExt, time::Instant};
 
 use crate::{
-    config,
+    AppState, Payload, config,
     java::structs::{JavaInfo, Progress},
-    AppState, Payload,
 };
 
 const BASE_URL: &str = "https://api.azul.com/metadata/v1/zulu/packages/";

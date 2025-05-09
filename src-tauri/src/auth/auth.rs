@@ -1,8 +1,8 @@
 use std::{
     collections::HashMap,
     sync::{
-        atomic::{AtomicBool, Ordering},
         Arc,
+        atomic::{AtomicBool, Ordering},
     },
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
@@ -15,7 +15,7 @@ use serde_json::json;
 use tauri::{AppHandle, Emitter, State};
 use tokio::time::sleep;
 
-use crate::{auth::account::Profile, config, AppState};
+use crate::{AppState, auth::account::Profile, config};
 
 use super::{
     account::Account,
@@ -77,7 +77,7 @@ pub async fn login(
                 authentication_response = Some(token_response);
                 info!("Received authentication token");
             }
-            Result::Err(e) => {
+            Err(e) => {
                 info!("Failed to receive authentication token: {}", e);
                 sleep(Duration::from_secs(device_response.interval)).await;
             }
@@ -95,7 +95,7 @@ pub async fn login(
     )
     .await?;
     let minecraft_profile_response =
-        minecraft_profile_response(minecraft_response.access_token, &client).await?;
+        minecraft_profile_response(&minecraft_response.access_token, &client).await?;
 
     let minecraft_profile_response_clone = minecraft_profile_response.clone();
 
@@ -107,7 +107,7 @@ pub async fn login(
     let account = Account {
         active: true,
         expiry: combined_timestamp,
-        access_token: auth_response.access_token,
+        access_token: minecraft_response.access_token,
         refresh_token: auth_response.refresh_token,
         profile: minecraft_profile_response_clone.into(),
     };
@@ -155,7 +155,7 @@ pub async fn refresh(client: &Client) -> Result<(), Error> {
             )
             .await?;
             let minecraft_profile_response =
-                minecraft_profile_response(minecraft_response.access_token, client).await?;
+                minecraft_profile_response(&minecraft_response.access_token, client).await?;
 
             let expires_in = Duration::from_secs(refresh_token_response.expires_in.into());
             let system_time = SystemTime::now().duration_since(UNIX_EPOCH)?;
@@ -167,8 +167,8 @@ pub async fn refresh(client: &Client) -> Result<(), Error> {
             let new_account = Account {
                 active: account.active,
                 expiry: combined_timestamp,
-                access_token: refresh_token_response.access_token,
-                refresh_token: account.refresh_token,
+                access_token: minecraft_response.access_token,
+                refresh_token: refresh_token_response.refresh_token,
                 profile,
             };
 
@@ -198,16 +198,47 @@ pub fn switch_account(id: String) -> Result<(), Error> {
     if let Some(account) = config.accounts.iter_mut().find(|acc| acc.profile.id == id) {
         account.active = true;
         config::save_config(&config)?;
-        return Ok(());
+        Ok(())
     } else {
-        return Err(Error::msg("Account not found"));
+        Err(Error::msg("Account not found"))
     }
 }
 
 pub fn delete_account(id: String) -> Result<(), Error> {
     let mut config = config::get_config()?;
+
+    let mut deleted_account_was_active = false;
+    let mut active_account_id_if_exists: Option<String> = None;
+
+    if let Some(account_to_delete) = config.accounts.iter().find(|acc| acc.profile.id == id) {
+        if account_to_delete.active {
+            deleted_account_was_active = true;
+        }
+    }
+
     config.accounts.retain(|acc| acc.profile.id != id);
+
+    if deleted_account_was_active && !config.accounts.is_empty() {
+        let is_another_account_active = config.accounts.iter().any(|acc| acc.active);
+        if !is_another_account_active {
+            config.accounts[0].active = true;
+            active_account_id_if_exists = Some(config.accounts[0].profile.id.clone());
+            info!(
+                "Set account with profile ID {} as active after deleting previously active account.",
+                config.accounts[0].profile.id
+            );
+        }
+    } else if config.accounts.is_empty() && deleted_account_was_active {
+        info!("Last active account deleted. No accounts left to set as active.");
+    }
+
     config::save_config(&config)?;
+    info!(
+        "Account with ID {} deleted. Active account is now: {:?}",
+        id,
+        active_account_id_if_exists.as_deref().unwrap_or("None")
+    );
+
     Ok(())
 }
 
@@ -241,7 +272,7 @@ async fn authorization_token_response(
         .form(&vec![
             ("grant_type", "urn:ietf:params:oauth:grant-type:device_code"),
             ("client_id", CLIENT_ID),
-            ("device_code", &device_code),
+            ("device_code", device_code),
         ])
         .send()
         .await?
@@ -260,7 +291,7 @@ async fn refresh_token_response(
         .form(&vec![
             ("grant_type", "refresh_token"),
             ("client_id", CLIENT_ID),
-            ("refresh_token", &refresh_token),
+            ("refresh_token", refresh_token),
         ])
         .send()
         .await?
@@ -333,12 +364,12 @@ async fn minecraft_response(
 }
 
 async fn minecraft_profile_response(
-    access_token: String,
+    access_token: &String,
     client: &Client,
 ) -> Result<MinecraftProfileResponse, Error> {
     let response = client
         .get("https://api.minecraftservices.com/minecraft/profile")
-        .bearer_auth(&access_token)
+        .bearer_auth(access_token)
         .send()
         .await?
         .json::<MinecraftProfileResponse>()

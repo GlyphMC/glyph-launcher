@@ -1,16 +1,18 @@
 use std::sync::Arc;
 
 use auth::auth::LoginHandle;
+use discord_rich_presence::DiscordIpcClient;
 use instance::InstanceConfig;
 use log::{error, info};
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
-use tauri::Manager;
+use tauri::{Manager, WindowEvent};
 use tokio::sync::Mutex;
 
 mod auth;
 mod commands;
 mod config;
+mod discord;
 mod instance;
 mod java;
 mod resources;
@@ -24,6 +26,7 @@ pub struct AppState {
     client: Arc<Mutex<Client>>,
     instances: Arc<Mutex<InstanceConfig>>,
     login_handle: LoginHandle,
+    discord_client: Arc<Mutex<Option<DiscordIpcClient>>>,
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -46,11 +49,13 @@ pub fn run() {
                     .unwrap_or_else(|_| InstanceConfig { instances: vec![] }),
             ));
             let login_handle = LoginHandle::new();
+            let discord_client = Arc::new(Mutex::new(None));
 
             AppState {
                 client,
                 instances,
                 login_handle,
+                discord_client,
             }
         })
         .setup(|app| {
@@ -78,6 +83,17 @@ pub fn run() {
             }
 
             let config = config::get_config()?;
+            info!(
+                "Initial config loaded. Rich Presence enabled: {}",
+                config.rich_presence
+            );
+
+            let discord_client_state = handle.state::<AppState>().discord_client.clone();
+
+            if config.rich_presence {
+                discord::connect(discord_client_state.clone());
+            }
+
             info!("Completed onboarding: {}", config.completed_onboarding);
             let location = if config.completed_onboarding {
                 "launcher".to_string()
@@ -88,6 +104,13 @@ pub fn run() {
             window
                 .eval(format!("window.location.href = '/#/{}'", location).as_str())
                 .unwrap();
+
+            window.on_window_event(move |event| {
+                if let WindowEvent::CloseRequested { .. } = event {
+                    let discord_client_state = discord_client_state.clone();
+                    discord::close_rpc(discord_client_state);
+                }
+            });
 
             let handle = app.handle().clone();
             tauri::async_runtime::spawn(async move {
@@ -119,6 +142,10 @@ pub fn run() {
             commands::delete_instance,
             commands::launch_instance,
             commands::get_versions,
+            commands::set_discord_activity,
+            commands::toggle_discord_rpc,
+            commands::get_launcher_settings,
+            commands::save_launcher_settings,
         ])
         .run(tauri::generate_context!())
         .expect("Error while running Tauri Application");

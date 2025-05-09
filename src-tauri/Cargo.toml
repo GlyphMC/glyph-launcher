@@ -5,8 +5,8 @@ description = "A Tauri App"
 authors = ["you"]
 license = ""
 repository = ""
-edition = "2021"
-rust-version = "1.77.2"
+edition = "2024"
+rust-version = "1.86.0"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -21,18 +21,24 @@ tauri-build = { version = "2.0.1", features = [] }
 serde_json = "1.0"
 serde = { version = "1.0", features = ["derive"] }
 log = "0.4"
-tauri = { version = "2.0.6", features = [] }
-tauri-plugin-log = "2.0.0-rc"
-reqwest = { version = "0.12.8", features = ["json"] }
-dirs = "5.0.1"
-anyhow = "1.0.92"
-tokio = { version = "1.41.0", features = ["full"] }
-tauri-plugin-clipboard-manager = "2.0.1"
+tauri = { version = "2.5", features = [] }
+tauri-plugin-log = "2.4"
+reqwest = { version = "0.12.15", features = ["json", "stream"] }
+dirs = "6"
+anyhow = "1.0.98"
+tokio = { version = "1.45", features = ["full"] }
+tauri-plugin-clipboard-manager = "2.2"
 tauri-plugin-shell = "2"
 tauri-plugin-os = "2"
-chrono = "0.4.38"
+chrono = { version = "0.4", features = ["serde"] }
 walkdir = "2.5.0"
 tauri-plugin-dialog = "2"
 async_zip = { version = "0.0.17", features = ["full"] }
-tokio-util = { version = "0.7.13", features = ["compat"] }
+tokio-util = { version = "0.7.15", features = ["compat"] }
 tauri-plugin-single-instance = "2"
+discord-rich-presence = "0.2.5"
+dunce = "1.0.5"
+futures = "0.3"
+
+[target.'cfg(windows)'.dependencies]
+winreg = "0.55"

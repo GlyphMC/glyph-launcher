@@ -4,23 +4,15 @@
 	import { fade } from "svelte/transition";
 	import { writeText } from "@tauri-apps/plugin-clipboard-manager";
 	import { open } from "@tauri-apps/plugin-shell";
-	import { invoke } from "@tauri-apps/api/core";
 
 	async function copyAndOpen() {
 		await writeText(loginCode).then(() => open(verificationUri));
 	}
 
-	async function cancelLogin() {
-		await invoke("cancel_login").then(() => {
-			console.log("Login cancelled");
-			onCancel();
-		});
-	}
-
 	type Props = {
 		loginCode: string;
 		verificationUri: string;
-		onCancel: () => void;
+		onCancel: () => void | Promise<void>;
 	};
 
 	let { loginCode, verificationUri, onCancel }: Props = $props();
@@ -39,7 +31,7 @@
 		</Card.Content>
 		<Card.Footer class="flex justify-center gap-2">
 			<Button onclick={copyAndOpen} variant="outline">Copy and Open</Button>
-			<Button onclick={cancelLogin} variant="destructive">Cancel</Button>
+			<Button onclick={onCancel} variant="destructive">Cancel</Button>
 		</Card.Footer>
 	</Card.Root>
 </div>
