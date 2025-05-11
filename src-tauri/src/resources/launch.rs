@@ -19,13 +19,12 @@ use crate::{
     instance::Instance,
     resources::{
         assets::AssetManager,
-        gpu_prefs,
         version::{VersionManifest, get_version_manifest},
     },
 };
 
 #[cfg(target_os = "windows")]
-use crate::resources::gpu_prefs::GpuPreference;
+use crate::resources::gpu_prefs::{self, GpuPreference};
 
 pub async fn launch(
     state: State<'_, AppState>,
