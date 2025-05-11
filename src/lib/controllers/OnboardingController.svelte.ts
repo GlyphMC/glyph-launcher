@@ -155,7 +155,7 @@ export class OnboardingController {
 		try {
 			await invoke("set_onboarding_complete");
 			console.log("Onboarding complete, navigating to launcher.");
-			goto(LAUNCHER_PATH);
+			await goto(LAUNCHER_PATH);
 		} catch (error) {
 			console.error("Failed to set onboarding complete:", error);
 		}

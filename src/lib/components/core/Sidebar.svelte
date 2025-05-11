@@ -6,7 +6,6 @@
 	import { ScrollArea } from "$lib/components/ui/scroll-area";
 	import { Separator } from "$lib/components/ui/separator";
 	import ChevronUp from "lucide-svelte/icons/chevron-up";
-	import { goto } from "$app/navigation";
 	import { onDestroy, onMount } from "svelte";
 	import LoginPopUp from "./LoginPopUp.svelte";
 	import { SidebarController } from "$lib/controllers/SidebarController.svelte";
@@ -35,7 +34,7 @@
 		<Sidebar.Header class="text-zinc-100 hover:text-zinc-50">
 			<a href="/#/launcher" class="font-bold">Glyph Launcher</a>
 			<Input type="text" placeholder="Search instances..." bind:value={controller.searchInput} />
-			<Button variant="outline" onclick={() => goto("/#/launcher/instance/new")}>Add instance</Button>
+			<Button variant="outline" onclick={controller.handleAddInstanceClick}>Add instance</Button>
 		</Sidebar.Header>
 
 		<Sidebar.Content class="mx-2 mt-0">
@@ -74,10 +73,10 @@
 								{/snippet}
 							</DropdownMenu.Trigger>
 							<DropdownMenu.Content side="top" class="w-[--bits-dropdown-menu-anchor-width]">
-								<DropdownMenu.Item onclick={() => goto("/#/launcher/accounts")}>
+								<DropdownMenu.Item onclick={controller.navigateToAccounts}>
 									<span>Accounts</span>
 								</DropdownMenu.Item>
-								<DropdownMenu.Item onclick={() => goto("/#/launcher/settings")}>
+								<DropdownMenu.Item onclick={controller.navigateToSettings}>
 									<span>Settings</span>
 								</DropdownMenu.Item>
 								<DropdownMenu.Item onclick={controller.logout}>

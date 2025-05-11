@@ -26,7 +26,7 @@ export class SidebarController {
 		await authService.init();
 		await this.fetchInstances();
 		await this.loadMinecraftProfiles();
-		this.setupListeners();
+		await this.setupListeners();
 	}
 
 	async fetchInstances() {
@@ -63,7 +63,7 @@ export class SidebarController {
 	}
 
 	async handleCancelLoginPopUp() {
-		authService.cancelLoginPopup();
+		await authService.cancelLoginPopup();
 	}
 
 	private async setupListeners() {

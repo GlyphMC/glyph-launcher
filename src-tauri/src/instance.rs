@@ -24,14 +24,14 @@ pub struct Instance {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Game {
     pub version: String,
-    modloader: Modloader,
+    pub modloader: Modloader,
     pub url: String,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-struct Modloader {
-    loader: String,
-    version: Option<String>,
+pub struct Modloader {
+    pub loader: String,
+    pub version: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -157,10 +157,9 @@ impl InstanceConfig {
     }
 
     pub fn update_instance(&mut self, handle: AppHandle, instance: Instance) -> Result<(), Error> {
-        self.instances
-            .iter_mut()
-            .find(|i| i.slug == instance.slug)
-            .map(|i| *i = instance);
+        if let Some(i) = self.instances.iter_mut().find(|i| i.slug == instance.slug) {
+            *i = instance;
+        }
         self.write_to_file()?;
 
         handle.emit(

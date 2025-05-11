@@ -17,39 +17,15 @@ use walkdir::WalkDir;
 use crate::{
     AppState, Payload, config, discord,
     instance::Instance,
-    resources::{assets::AssetManager, version::get_version_manifest},
+    resources::{
+        assets::AssetManager,
+        gpu_prefs,
+        version::{VersionManifest, get_version_manifest},
+    },
 };
 
-use super::version::VersionManifest;
-
-enum GpuPreference {
-    Integrated,
-    Discrete,
-}
-
 #[cfg(target_os = "windows")]
-fn set_gpu_preference(java_path: &str, preference: GpuPreference) -> Result<(), Error> {
-    use winreg::{RegKey, enums::HKEY_CURRENT_USER};
-
-    let hkcu = RegKey::predef(HKEY_CURRENT_USER);
-    let (gpu_pref_key, _) =
-        hkcu.create_subkey("Software\\Microsoft\\DirectX\\UserGpuPreferences")?;
-
-    let absolute_path = dunce::canonicalize(java_path)?
-        .to_string_lossy()
-        .replace('/', "\\");
-
-    let gpu_preference_value = match preference {
-        GpuPreference::Integrated => "GpuPreference=1;",
-        GpuPreference::Discrete => "GpuPreference=2;",
-    };
-
-    gpu_pref_key
-        .set_value(&absolute_path, &gpu_preference_value)
-        .map_err(|e| anyhow!("Failed to write GPU preference to registry: {}", e))?;
-
-    Ok(())
-}
+use crate::resources::gpu_prefs::GpuPreference;
 
 pub async fn launch(
     state: State<'_, AppState>,
@@ -87,19 +63,19 @@ pub async fn launch(
         info!("Downloading assets for instance: {}", slug);
         let asset_manager = AssetManager::new(client, &handle, &config_dir);
 
-        let _ = asset_manager
+        asset_manager
             .download_assets(&version_manifest)
             .await
             .map_err(|e| anyhow!("Failed to download assets for {}: {}", slug, e))?;
         info!("Assets downloaded for instance: {}", slug);
 
-        let _ = asset_manager
+        asset_manager
             .download_libraries(&version_manifest)
             .await
             .map_err(|e| anyhow!("Failed to download libraries for {}: {}", slug, e))?;
         info!("Libraries downloaded for instance: {}", slug);
 
-        let _ = asset_manager
+        asset_manager
             .download_version_jar(&version_manifest)
             .await
             .map_err(|e| anyhow!("Failed to download version JAR for {}: {}", slug, e))?;
@@ -233,17 +209,18 @@ fn launch_game(
         .arg("-cp")
         .arg(classpath)
         .arg(main_class)
-        .args(&game_args);
-
-    let gpu_to_use = if config.use_discrete_gpu {
-        GpuPreference::Discrete
-    } else {
-        GpuPreference::Integrated
-    };
+        .args(game_args);
 
     #[cfg(target_os = "windows")]
-    if let Err(e) = set_gpu_preference(&instance.java.path, gpu_to_use) {
-        error!("Failed to set GPU preference - Windows: {}", e);
+    {
+        let gpu_to_use = if config.use_discrete_gpu {
+            GpuPreference::Discrete
+        } else {
+            GpuPreference::Integrated
+        };
+        if let Err(e) = gpu_prefs::set_gpu_preference(&instance.java.path, gpu_to_use) {
+            error!("Failed to set GPU preference: {}", e);
+        }
     }
 
     #[cfg(target_os = "linux")]
@@ -309,6 +286,13 @@ fn launch_game(
         .wait()
         .map_err(|e| Error::msg(format!("Failed to wait for game process: {}", e)))?;
 
+    #[cfg(target_os = "windows")]
+    {
+        if let Err(e) = gpu_prefs::delete_gpu_preference(&instance.java.path) {
+            error!("Failed to delete GPU preference: {}", e);
+        }
+    }
+
     discord::set_activity(
         discord_client_state,
         "Exploring the Launcher".to_string(),
@@ -329,7 +313,7 @@ fn construct_classpath(
     config_dir: &Path,
     version_manifest: &VersionManifest,
 ) -> Result<String, Error> {
-    let mut classpath_entries = Vec::new();
+    let mut classpath_entries: Vec<String> = Vec::new();
     let libraries_dir = config_dir.join("libraries");
 
     for entry in WalkDir::new(&libraries_dir)

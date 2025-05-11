@@ -2,6 +2,7 @@
 	import { onMount, onDestroy } from "svelte";
 	import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 	import { page } from "$app/state";
+	import type { Payload } from "$lib/types";
 
 	let logMessages = $state<string[]>([]);
 	let logContainerElement: HTMLDivElement | null = $state(null);
@@ -24,8 +25,8 @@
 
 		(async () => {
 			try {
-				unlistenFn = await listen<{ message: string }>(eventName, (event) => {
-					if (event.payload && typeof event.payload.message === "string") {
+				unlistenFn = await listen<Payload>(eventName, (event) => {
+					if (event.payload.message) {
 						logMessages = [...logMessages, event.payload.message];
 						if (logContainerElement) {
 							setTimeout(() => {
