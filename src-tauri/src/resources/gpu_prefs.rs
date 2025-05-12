@@ -1,7 +1,10 @@
 #![cfg(target_os = "windows")]
 
 use anyhow::{Error, Result, anyhow};
-use winreg::{RegKey, enums::HKEY_CURRENT_USER};
+use winreg::{
+    RegKey,
+    enums::{HKEY_CURRENT_USER, KEY_WRITE},
+};
 
 #[derive(Debug)]
 pub enum GpuPreference {
@@ -34,7 +37,7 @@ pub fn delete_gpu_preference(java_path: &str) -> Result<(), Error> {
     let hkcu = RegKey::predef(HKEY_CURRENT_USER);
     let gpu_pref_key = hkcu.open_subkey_with_flags(
         "Software\\Microsoft\\DirectX\\UserGpuPreferences",
-        winreg::enums::KEY_WRITE,
+        KEY_WRITE,
     )?;
 
     let absolute_path = dunce::canonicalize(java_path)?

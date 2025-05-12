@@ -1,10 +1,11 @@
 use std::{env, path::PathBuf};
 
 use anyhow::{Error, Result, anyhow};
+use futures::try_join;
 use log::{debug, info};
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
-use tauri::{AppHandle, Emitter, State, async_runtime::spawn};
+use tauri::{AppHandle, Emitter, State};
 use tokio::{fs::File, io::AsyncWriteExt, time::Instant};
 
 use crate::{
@@ -37,30 +38,14 @@ pub async fn download_java(
     debug!("Clearing runtime directory: {}", runtime_dir.display());
     if runtime_dir.exists() {
         tokio::fs::remove_dir_all(&runtime_dir).await?;
-        tokio::fs::create_dir_all(&runtime_dir).await?;
     }
+    tokio::fs::create_dir_all(&runtime_dir).await?;
 
-    let handle_8 = {
-        let client = client.clone();
-        let handle = handle.clone();
-        spawn(async move { download_java_version("8", client, handle).await })
-    };
-
-    let handle_17 = {
-        let client = client.clone();
-        let handle = handle.clone();
-        spawn(async move { download_java_version("17", client, handle).await })
-    };
-
-    let handle_21 = {
-        let client = client.clone();
-        let handle = handle.clone();
-        spawn(async move { download_java_version("21", client, handle).await })
-    };
-
-    let java_8_archive_path = handle_8.await??;
-    let java_17_archive_path = handle_17.await??;
-    let java_21_archive_path = handle_21.await??;
+    let (java_8_archive_path, java_17_archive_path, java_21_archive_path) = try_join!(
+        download_java_version(8, &client, &handle),
+        download_java_version(17, &client, &handle),
+        download_java_version(21, &client, &handle)
+    )?;
 
     handle.emit(
         "download-finished",
@@ -81,9 +66,9 @@ pub async fn download_java(
 }
 
 async fn download_java_version(
-    version: &str,
-    client: Client,
-    handle: AppHandle,
+    version: i8,
+    client: &Client,
+    handle: &AppHandle,
 ) -> Result<PathBuf, Error> {
     let config_dir = config::get_config_dir()?;
     let runtime_dir = config_dir.join("runtime");
@@ -102,8 +87,9 @@ async fn download_java_version(
         _ => return Err(anyhow!("Unsupported architecture")),
     };
 
+    let java_version = version.to_string();
     let query_params = [
-        ("java_version", version),
+        ("java_version", java_version.as_str()),
         ("os", os),
         ("arch", arch),
         ("archive_type", "zip"),
@@ -145,7 +131,7 @@ async fn download_java_version(
                     file.write_all(&bytes).await?;
                     downloaded_size += bytes.len() as u64;
 
-                    if last_emit_time.elapsed().as_secs() >= 1 {
+                    if last_emit_time.elapsed().as_millis() >= 250 {
                         let percentage = (downloaded_size as f64 / total_size as f64) * 100.0;
                         let progress = Progress { percentage };
 

@@ -9,6 +9,7 @@ use std::{
 use anyhow::{Error, Result, anyhow};
 use chrono::Utc;
 use discord_rich_presence::DiscordIpcClient;
+use futures::try_join;
 use log::{error, info};
 use tauri::{AppHandle, Emitter, State};
 use tokio::{sync::Mutex, time::Instant};
@@ -26,6 +27,79 @@ use crate::{
 #[cfg(target_os = "windows")]
 use crate::resources::gpu_prefs::{self, GpuPreference};
 
+async fn download_instance_assets(
+    state: &State<'_, AppState>,
+    handle: &AppHandle,
+    slug: &str,
+    version_manifest: &VersionManifest,
+    config_dir: &Path,
+) -> Result<()> {
+    handle.emit(
+        "instance-download-assets-started",
+        Payload {
+            message: "Download started",
+        },
+    )?;
+
+    info!("Downloading assets for instance: {}", slug);
+    let client = state.client.lock().await.clone();
+    let asset_manager = AssetManager::new(client, handle, config_dir);
+
+    let assets_download_future = async {
+        asset_manager
+            .download_assets(version_manifest)
+            .await
+            .map_err(|e| anyhow!("Failed to download assets for {}: {}", slug, e))?;
+        info!("Assets downloaded for instance: {}", slug);
+        Result::<()>::Ok(())
+    };
+
+    let libraries_download_future = async {
+        asset_manager
+            .download_libraries(version_manifest)
+            .await
+            .map_err(|e| anyhow!("Failed to download libraries for {}: {}", slug, e))?;
+        info!("Libraries downloaded for instance: {}", slug);
+        Result::<()>::Ok(())
+    };
+
+    let version_jar_download_future = async {
+        asset_manager
+            .download_version_jar(version_manifest)
+            .await
+            .map_err(|e| anyhow!("Failed to download version JAR for {}: {}", slug, e))?;
+        info!("Version JAR downloaded for instance: {}", slug);
+        Result::<()>::Ok(())
+    };
+
+    try_join!(
+        assets_download_future,
+        libraries_download_future,
+        version_jar_download_future
+    )?;
+
+    info!(
+        "All asset components downloaded successfully for instance: {}",
+        slug
+    );
+
+    handle.emit(
+        "instance-download-assets-finished",
+        Payload {
+            message: "Download finished",
+        },
+    )?;
+
+    let mut instances_config = state.instances.lock().await;
+    let mut instance_to_update = instances_config
+        .get_instance(slug)
+        .ok_or_else(|| anyhow!("Instance {} not found for asset update", slug))?;
+    instance_to_update.settings.has_launched = true;
+    instances_config.update_instance(handle.clone(), instance_to_update)?;
+
+    Ok(())
+}
+
 pub async fn launch(
     state: State<'_, AppState>,
     handle: AppHandle,
@@ -33,7 +107,6 @@ pub async fn launch(
 ) -> Result<(), Error> {
     info!("Launching instance: {}", slug);
 
-    let client = state.client.lock().await.clone();
     let config_dir = config::get_config_dir()?;
     let discord_client_state = state.discord_client.clone();
 
@@ -52,48 +125,7 @@ pub async fn launch(
     let version_manifest = get_version_manifest(&state, &game_url).await?;
 
     if needs_asset_download {
-        handle.emit(
-            "instance-download-assets-started",
-            Payload {
-                message: "Download started",
-            },
-        )?;
-
-        info!("Downloading assets for instance: {}", slug);
-        let asset_manager = AssetManager::new(client, &handle, &config_dir);
-
-        asset_manager
-            .download_assets(&version_manifest)
-            .await
-            .map_err(|e| anyhow!("Failed to download assets for {}: {}", slug, e))?;
-        info!("Assets downloaded for instance: {}", slug);
-
-        asset_manager
-            .download_libraries(&version_manifest)
-            .await
-            .map_err(|e| anyhow!("Failed to download libraries for {}: {}", slug, e))?;
-        info!("Libraries downloaded for instance: {}", slug);
-
-        asset_manager
-            .download_version_jar(&version_manifest)
-            .await
-            .map_err(|e| anyhow!("Failed to download version JAR for {}: {}", slug, e))?;
-        info!("Version JAR downloaded for instance: {}", slug);
-
-        handle.emit(
-            "instance-download-assets-finished",
-            Payload {
-                message: "Download finished",
-            },
-        )?;
-
-        let mut instances_config = state.instances.lock().await;
-        let mut instance_to_update = instances_config
-            .get_instance(slug)
-            .ok_or_else(|| anyhow!("Instance {} not found for asset update", slug))?;
-
-        instance_to_update.settings.has_launched = true;
-        instances_config.update_instance(handle.clone(), instance_to_update)?;
+        download_instance_assets(&state, &handle, slug, &version_manifest, &config_dir).await?;
     }
 
     let (instance_game_launch, instance_dir) = {
@@ -105,6 +137,18 @@ pub async fn launch(
 
         (instance, dir)
     };
+
+    if !instance_dir.exists() {
+        tokio::fs::create_dir_all(&instance_dir)
+            .await
+            .map_err(|e| {
+                anyhow!(
+                    "Failed to create instance directory {}: {}",
+                    instance_dir.display(),
+                    e
+                )
+            })?;
+    }
 
     let start_time = Instant::now();
 
@@ -149,18 +193,20 @@ fn launch_game(
     handle: AppHandle,
     discord_client_state: Arc<Mutex<Option<DiscordIpcClient>>>,
 ) -> Result<(), Error> {
-    discord::set_activity(
-        discord_client_state.clone(),
-        format!("Playing {}", instance.name),
-        format!("Version: {}", instance.game.version),
-    );
-
     let config = config::get_config()?;
     let config_dir = config::get_config_dir()?;
 
     let main_class = &version_manifest.main_class;
     let classpath = construct_classpath(&config_dir, version_manifest)?;
     let assets_dir = config_dir.join("assets");
+
+    if config.rich_presence {
+        discord::set_activity(
+            discord_client_state.clone(),
+            format!("Playing {}", instance.name),
+            format!("Version: {}", instance.game.version),
+        );
+    }
 
     let account = config
         .accounts
@@ -231,11 +277,38 @@ fn launch_game(
             .env("__GLX_VENDOR_LIBRARY_NAME", "nvidia");
     }
 
+    let formatted_slug = instance.slug.replace(".", "_");
+    let slug_arc = Arc::new(formatted_slug);
+    if let Err(e) = handle.emit(
+        &format!("{}-launch-started", slug_arc),
+        Payload {
+            message: "Game launch started",
+        },
+    ) {
+        error!(
+            "Failed to emit game launch started event for {}: {}",
+            instance.slug, e
+        );
+    }
+
     let mut child = command
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
         .spawn()
-        .map_err(|e| Error::msg(format!("Failed to launch game: {}", e)))?;
+        .map_err(|e| {
+            if let Err(err_emit) = handle.emit(
+                &format!("{}-launch-finished", slug_arc),
+                Payload {
+                    message: "Game launch failed to start",
+                },
+            ) {
+                error!(
+                    "Failed to emit game launch finished event for {} after spawn error: {}",
+                    instance.slug, err_emit
+                );
+            }
+            Error::msg(format!("Failed to launch game: {}", e))
+        })?;
 
     let stdout = child
         .stdout
@@ -245,7 +318,6 @@ fn launch_game(
         .stderr
         .take()
         .ok_or_else(|| anyhow!("Failed to capture stderr from game process"))?;
-    let slug_arc = Arc::new(instance.slug.replace(".", "_"));
 
     let stdout_handle = handle.clone();
     let slug = Arc::clone(&slug_arc);
@@ -285,6 +357,18 @@ fn launch_game(
         .wait()
         .map_err(|e| Error::msg(format!("Failed to wait for game process: {}", e)))?;
 
+    if let Err(e) = handle.emit(
+        &format!("{}-launch-finished", slug_arc),
+        Payload {
+            message: "Game launch finished",
+        },
+    ) {
+        error!(
+            "Failed to emit game launch finished event for {}: {}",
+            instance.slug, e
+        );
+    }
+
     #[cfg(target_os = "windows")]
     {
         if let Err(e) = gpu_prefs::delete_gpu_preference(&instance.java.path) {
@@ -292,11 +376,13 @@ fn launch_game(
         }
     }
 
-    discord::set_activity(
-        discord_client_state,
-        "Exploring the Launcher".to_string(),
-        "Idle".to_string(),
-    );
+    if config.rich_presence {
+        discord::set_activity(
+            discord_client_state,
+            "Exploring the Launcher".to_string(),
+            "Idle".to_string(),
+        );
+    }
 
     if !status.success() {
         return Err(Error::msg(format!(

@@ -2,8 +2,9 @@ use std::path::{Component, PathBuf};
 
 use anyhow::{Error, Ok, Result, anyhow};
 use async_zip::tokio::read::seek::ZipFileReader;
+use futures::try_join;
 use log::info;
-use tauri::{AppHandle, Emitter, async_runtime::spawn};
+use tauri::{AppHandle, Emitter};
 use tokio::{
     fs::{self, File},
     io::{self, BufReader},
@@ -17,7 +18,7 @@ pub async fn extract_java(
     handle: AppHandle,
     paths: (PathBuf, PathBuf, PathBuf),
 ) -> Result<(PathBuf, PathBuf, PathBuf), Error> {
-    let (java_8_archive_path, java_17_archive_path, java_21_archive_path) = paths;
+    let (java_8_path, java_17_path, java_21_path) = paths;
 
     handle.emit(
         "extract-started",
@@ -26,36 +27,11 @@ pub async fn extract_java(
         },
     )?;
 
-    let handle_8 = {
-        let handle = handle.clone();
-        let java_8_path = java_8_archive_path.clone();
-        spawn(async move {
-            let output_dir_8 = extract_java_archive(handle, "8", java_8_path).await?;
-            Ok(output_dir_8)
-        })
-    };
-
-    let handle_17 = {
-        let handle = handle.clone();
-        let java_17_path = java_17_archive_path.clone();
-        spawn(async move {
-            let output_dir_17 = extract_java_archive(handle, "17", java_17_path).await?;
-            Ok(output_dir_17)
-        })
-    };
-
-    let handle_21 = {
-        let handle = handle.clone();
-        let java_21_path = java_21_archive_path.clone();
-        spawn(async move {
-            let output_dir_21 = extract_java_archive(handle, "21", java_21_path).await?;
-            Ok(output_dir_21)
-        })
-    };
-
-    let output_dir_8 = handle_8.await??;
-    let output_dir_17 = handle_17.await??;
-    let output_dir_21 = handle_21.await??;
+    let (output_dir_8, output_dir_17, output_dir_21) = try_join!(
+        extract_java_archive(&handle, 8, &java_8_path),
+        extract_java_archive(&handle, 17, &java_17_path),
+        extract_java_archive(&handle, 21, &java_21_path)
+    )?;
 
     handle.emit(
         "extract-finished",
@@ -68,9 +44,9 @@ pub async fn extract_java(
 }
 
 async fn extract_java_archive(
-    handle: AppHandle,
-    version: &str,
-    archive_path: PathBuf,
+    handle: &AppHandle,
+    version: i8,
+    archive_path: &PathBuf,
 ) -> Result<PathBuf, Error> {
     info!("Extracting ZIP archive: {}", archive_path.to_string_lossy());
 
@@ -88,10 +64,8 @@ async fn extract_java_archive(
     let mut extracted_size = 0;
     let mut last_emit_time = Instant::now();
     let entries = archive.file().entries().to_vec();
-    let num_entries = entries.len();
 
-    for index in 0..num_entries {
-        let entry = &entries[index];
+    for (index, entry) in entries.iter().enumerate() {
         let file_name = entry.filename().as_str()?;
         let file_path = PathBuf::from(file_name);
 
@@ -120,7 +94,7 @@ async fn extract_java_archive(
 
         extracted_size += entry.uncompressed_size();
 
-        if last_emit_time.elapsed().as_secs() >= 1 {
+        if last_emit_time.elapsed().as_millis() >= 250 {
             let percentage = (extracted_size as f64 / total_size as f64) * 100.0;
             let progress = Progress { percentage };
 

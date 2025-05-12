@@ -119,3 +119,8 @@ export type AssetsDownloadState = "none" | "assets" | "libraries" | "version-jar
 export type AssetsDownloadProgress = {
 	[key: string]: number;
 };
+
+export type LauncherSettings = {
+	richPresence: boolean;
+	useDiscreteGpu: boolean;
+};

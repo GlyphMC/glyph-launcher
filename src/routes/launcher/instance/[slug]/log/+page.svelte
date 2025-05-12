@@ -42,20 +42,10 @@
 				console.error(`Failed to listen to event ${eventName}:`, e);
 			}
 		})();
-
-		return () => {
-			if (unlistenFn) {
-				console.log(`Unlistening from ${eventName}`);
-				unlistenFn();
-			}
-		};
 	});
 
 	onDestroy(() => {
-		if (unlistenFn) {
-			console.log(`Log page destroyed. Unlistening from ${eventName}`);
-			unlistenFn();
-		}
+		unlistenFn?.();
 	});
 </script>
 

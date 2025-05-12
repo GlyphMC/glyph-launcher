@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onMount, type Snippet } from "svelte";
+	import { onDestroy, onMount, type Snippet } from "svelte";
 	import type { LayoutData } from "./$types";
 	import type { Instance } from "$lib/types";
 	import { invoke } from "@tauri-apps/api/core";
@@ -10,10 +10,14 @@
 	import InstanceAssetsDownloadPopUp from "$lib/components/core/InstanceAssetsDownloadPopUp.svelte";
 	import { formatDistanceToNow, parseISO } from "date-fns";
 	import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
+	import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 
 	let { data, children }: { data: LayoutData; children: Snippet } = $props();
 	let instance = $state<Instance>();
-	let showAssetsDownloadPopUp = $state(false);
+	let isLaunching = $state(false);
+
+	let unlistenLaunchStarted: UnlistenFn | undefined;
+	let unlistenLaunchFinished: UnlistenFn | undefined;
 
 	function formatTimePlayed(totalSeconds: number): string {
 		if (totalSeconds === undefined || totalSeconds === null || totalSeconds === 0) return "Never";
@@ -45,6 +49,8 @@
 	}
 
 	async function launchInstance() {
+		if (isLaunching) return;
+
 		try {
 			await invoke("launch_instance", { slug: data.slug });
 		} catch (error) {
@@ -95,12 +101,34 @@
 
 	onMount(async () => {
 		await getInstance();
+
+		const label = `${instance?.slug}`.replaceAll(".", "_");
+		const launchStartedEvent = `${label}-launch-started`;
+		const launchFinishedEvent = `${label}-launch-finished`;
+
+		try {
+			unlistenLaunchStarted = await listen(launchStartedEvent, (event) => {
+				console.log("Launch started event received:", event);
+				isLaunching = true;
+			});
+
+			unlistenLaunchFinished = await listen(launchFinishedEvent, (event) => {
+				console.log("Launch finished event received:", event);
+				isLaunching = false;
+				getInstance();
+			});
+		} catch (e) {
+			console.error("Error setting up event listeners:", e);
+		}
+	});
+
+	onDestroy(() => {
+		unlistenLaunchStarted?.();
+		unlistenLaunchFinished?.();
 	});
 </script>
 
-{#if showAssetsDownloadPopUp}
-	<InstanceAssetsDownloadPopUp />
-{/if}
+<InstanceAssetsDownloadPopUp />
 
 <div class="w-full overflow-hidden font-display">
 	<p class="mb-2 px-10 pt-10 text-3xl font-bold text-zinc-50">{instance?.name}</p>
@@ -118,7 +146,13 @@
 	</div>
 
 	<div class="ml-10 mt-8 flex space-x-2">
-		<Button class="w-24 px-10" onclick={launchInstance}>Launch</Button>
+		<Button class="w-30 px-10" onclick={launchInstance} disabled={isLaunching}>
+			{#if isLaunching}
+				<span class="animate-pulse">Launching...</span>
+			{:else}
+				Launch
+			{/if}
+		</Button>
 		<Button variant="outline" class="w-24 px-10" onclick={openLogWindow}>
 			<SquareChevronRight /> Logs
 		</Button>

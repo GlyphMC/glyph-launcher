@@ -108,7 +108,7 @@ impl AssetManager {
             }
 
             downloaded_assets += 1;
-            if last_emit_time.elapsed().as_secs() >= 1 {
+            if last_emit_time.elapsed().as_millis() >= 250 {
                 let percentage = (downloaded_assets as f64 / total_assets as f64) * 100.0;
                 self.handle
                     .emit("instance-download-assets-progress", Progress { percentage })?;
@@ -150,7 +150,7 @@ impl AssetManager {
             }
 
             downloaded_libraries += 1;
-            if last_emit_time.elapsed().as_secs() >= 1 {
+            if last_emit_time.elapsed().as_millis() >= 250 {
                 let percentage = (downloaded_libraries as f64 / total_libraries as f64) * 100.0;
                 self.handle.emit(
                     "instance-download-libraries-progress",
@@ -202,7 +202,7 @@ impl AssetManager {
                 file.write_all(&chunk).await?;
                 downloaded_size += chunk.len() as u64;
 
-                if last_emit_time.elapsed().as_secs() >= 1 {
+                if last_emit_time.elapsed().as_millis() >= 250 {
                     let percentage = (downloaded_size as f64 / total_size as f64) * 100.0;
                     self.handle.emit(
                         "instance-download-version-jar-progress",
@@ -221,6 +221,11 @@ impl AssetManager {
                 "Minecraft version JAR already downloaded: {}",
                 version_manifest.id
             );
+
+            self.handle.emit(
+                "instance-download-version-jar-progress",
+                Progress { percentage: 100.0 },
+            )?;
         }
 
         Ok(())
