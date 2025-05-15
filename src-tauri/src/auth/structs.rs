@@ -57,13 +57,13 @@ pub struct MinecraftProfileResponse {
     capes: Vec<Cape>,
 }
 
-impl Into<Profile> for MinecraftProfileResponse {
-    fn into(self) -> Profile {
+impl From<MinecraftProfileResponse> for Profile {
+    fn from(val: MinecraftProfileResponse) -> Self {
         Profile {
-            id: self.id,
-            name: self.name,
-            skins: self.skins,
-            capes: self.capes,
+            id: val.id,
+            name: val.name,
+            skins: val.skins,
+            capes: val.capes,
         }
     }
 }
