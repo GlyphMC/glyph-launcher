@@ -20,7 +20,7 @@ use crate::{
 pub async fn login(state: State<'_, AppState>, handle: AppHandle) -> Result<Profile, ()> {
     let login_handle = state.login_handle.clone();
     match auth::auth::login(&state, handle, login_handle).await {
-        Ok(profile_response) => Ok(profile_response.into()),
+        Ok(profile_response) => Ok(Profile::from(profile_response)),
         Err(e) => {
             log::error!("Login failed: {}", e);
             Err(())
@@ -112,7 +112,7 @@ pub fn get_java_from_config() -> Result<JavaConfig, ()> {
 #[tauri::command]
 pub async fn get_instances(state: State<'_, AppState>) -> Result<Vec<Instance>, ()> {
     let instances_lock = state.instances.lock().await;
-    Ok(instances_lock.get_instances())
+    Ok(instances_lock.get_instances().to_vec())
 }
 
 #[tauri::command]
@@ -129,7 +129,7 @@ pub async fn create_instance(
 ) -> Result<(), ()> {
     let mut instances_lock = state.instances.lock().await;
     instances_lock
-        .add_instance(&state, handle, instance)
+        .add_instance(&state, &handle, instance)
         .await
         .unwrap();
     Ok(())
@@ -142,7 +142,7 @@ pub async fn update_instance(
     instance: Instance,
 ) -> Result<(), ()> {
     let mut instances_lock = state.instances.lock().await;
-    instances_lock.update_instance(handle, instance).unwrap();
+    instances_lock.update_instance(&handle, instance).unwrap();
     Ok(())
 }
 
@@ -153,7 +153,7 @@ pub async fn delete_instance(
     slug: String,
 ) -> Result<(), ()> {
     let mut instances_lock = state.instances.lock().await;
-    instances_lock.delete_instance(handle, &slug).unwrap();
+    instances_lock.delete_instance(&handle, &slug).unwrap();
     Ok(())
 }
 
@@ -183,14 +183,13 @@ pub fn set_discord_activity(
     details: String,
     status: String,
 ) -> Result<(), ()> {
-    discord::set_activity(state.discord_client.clone(), details, status);
+    discord::set_activity(&state.discord_client, details, status);
     Ok(())
 }
 
 #[tauri::command]
 pub fn toggle_discord_rpc(state: State<'_, AppState>, enabled: bool) -> Result<(), ()> {
-    discord::toggle_rpc(state.discord_client.clone(), enabled);
-
+    discord::toggle_rpc(&state.discord_client, enabled);
     Ok(())
 }
 
@@ -207,8 +206,8 @@ pub fn get_launcher_settings() -> Result<LauncherSettings, String> {
 pub fn save_launcher_settings(handle: AppHandle, settings: LauncherSettings) -> Result<(), String> {
     config::update_launcher_settings(&handle, &settings).map_err(|e| e.to_string())?;
 
-    let discord_client_arc = handle.state::<AppState>().discord_client.clone();
-    discord::toggle_rpc(discord_client_arc, settings.rich_presence);
+    let discord_client = &handle.state::<AppState>().discord_client;
+    discord::toggle_rpc(discord_client, settings.rich_presence);
 
     Ok(())
 }

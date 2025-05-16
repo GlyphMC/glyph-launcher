@@ -99,8 +99,8 @@ impl InstanceConfig {
         Ok(())
     }
 
-    pub fn get_instances(&self) -> Vec<Instance> {
-        self.instances.clone()
+    pub fn get_instances(&self) -> &[Instance] {
+        &self.instances
     }
 
     pub fn get_instance(&self, slug: &str) -> Option<Instance> {
@@ -110,7 +110,7 @@ impl InstanceConfig {
     pub async fn add_instance(
         &mut self,
         state: &State<'_, AppState>,
-        handle: AppHandle,
+        handle: &AppHandle,
         mut instance: Instance,
     ) -> Result<(), Error> {
         let manifest = version::get_version_manifest(state, &instance.game.url).await?;
@@ -156,7 +156,7 @@ impl InstanceConfig {
         Ok(())
     }
 
-    pub fn update_instance(&mut self, handle: AppHandle, instance: Instance) -> Result<(), Error> {
+    pub fn update_instance(&mut self, handle: &AppHandle, instance: Instance) -> Result<(), Error> {
         if let Some(i) = self.instances.iter_mut().find(|i| i.slug == instance.slug) {
             *i = instance;
         }
@@ -172,7 +172,7 @@ impl InstanceConfig {
         Ok(())
     }
 
-    pub fn delete_instance(&mut self, handle: AppHandle, slug: &str) -> Result<(), Error> {
+    pub fn delete_instance(&mut self, handle: &AppHandle, slug: &str) -> Result<(), Error> {
         self.instances.retain(|i| i.slug != slug);
         self.write_to_file()?;
 

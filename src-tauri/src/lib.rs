@@ -88,10 +88,10 @@ pub fn run() {
                 config.rich_presence
             );
 
-            let discord_client_state = handle.state::<AppState>().discord_client.clone();
+            let discord_client_state = &handle.state::<AppState>().discord_client;
 
             if config.rich_presence {
-                discord::connect(discord_client_state.clone());
+                discord::connect(discord_client_state);
             }
 
             info!("Completed onboarding: {}", config.completed_onboarding);
@@ -105,19 +105,17 @@ pub fn run() {
                 .eval(format!("window.location.href = '/#/{}'", location).as_str())
                 .unwrap();
 
+            let discord_client_state = handle.state::<AppState>().discord_client.clone();
             window.on_window_event(move |event| {
                 if let WindowEvent::CloseRequested { .. } = event {
-                    let discord_client_state = discord_client_state.clone();
-                    discord::close_rpc(discord_client_state);
+                    discord::close_rpc(&discord_client_state);
                 }
             });
 
             let handle = app.handle().clone();
             tauri::async_runtime::spawn(async move {
                 let state = handle.state::<AppState>();
-                let binding = state.client.clone();
-                let client = binding.lock().await;
-                auth::auth::refresh(&client).await
+                auth::auth::refresh(&*state.client.lock().await).await
             });
 
             Ok(())

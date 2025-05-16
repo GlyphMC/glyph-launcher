@@ -6,7 +6,8 @@ use tokio::sync::Mutex;
 
 pub const DISCORD_APP_ID: &str = "1112468903336083477";
 
-pub fn connect(discord_client_state: Arc<Mutex<Option<DiscordIpcClient>>>) {
+pub fn connect(discord_client_state: &Arc<Mutex<Option<DiscordIpcClient>>>) {
+    let discord_client_state = discord_client_state.clone();
     tauri::async_runtime::spawn_blocking(move || match DiscordIpcClient::new(DISCORD_APP_ID) {
         Ok(mut client) => {
             if let Err(e) = client.connect() {
@@ -18,7 +19,7 @@ pub fn connect(discord_client_state: Arc<Mutex<Option<DiscordIpcClient>>>) {
             *discord_guard = Some(client);
             drop(discord_guard);
 
-            set_initial_activity(discord_client_state);
+            set_initial_activity(&discord_client_state);
         }
         Err(e) => {
             error!("Failed to create Discord IPC client: {:?}", e);
@@ -26,7 +27,7 @@ pub fn connect(discord_client_state: Arc<Mutex<Option<DiscordIpcClient>>>) {
     });
 }
 
-fn set_initial_activity(discord_client_state: Arc<Mutex<Option<DiscordIpcClient>>>) {
+fn set_initial_activity(discord_client_state: &Arc<Mutex<Option<DiscordIpcClient>>>) {
     set_activity(
         discord_client_state,
         "Exploring the Launcher".to_string(),
@@ -35,10 +36,11 @@ fn set_initial_activity(discord_client_state: Arc<Mutex<Option<DiscordIpcClient>
 }
 
 pub fn set_activity(
-    discord_client_state: Arc<Mutex<Option<DiscordIpcClient>>>,
+    discord_client_state: &Arc<Mutex<Option<DiscordIpcClient>>>,
     details: String,
     state: String,
 ) {
+    let discord_client_state = discord_client_state.clone();
     tauri::async_runtime::spawn_blocking(move || {
         let mut guard = discord_client_state.blocking_lock();
         if let Some(client) = guard.as_mut() {
@@ -54,7 +56,8 @@ pub fn set_activity(
     });
 }
 
-pub fn close_rpc(discord_client_state: Arc<Mutex<Option<DiscordIpcClient>>>) {
+pub fn close_rpc(discord_client_state: &Arc<Mutex<Option<DiscordIpcClient>>>) {
+    let discord_client_state = discord_client_state.clone();
     tauri::async_runtime::spawn_blocking(move || {
         let mut guard = discord_client_state.blocking_lock();
         if let Some(mut client) = guard.take() {
@@ -64,7 +67,7 @@ pub fn close_rpc(discord_client_state: Arc<Mutex<Option<DiscordIpcClient>>>) {
     });
 }
 
-pub fn toggle_rpc(discord_client_state: Arc<Mutex<Option<DiscordIpcClient>>>, enabled: bool) {
+pub fn toggle_rpc(discord_client_state: &Arc<Mutex<Option<DiscordIpcClient>>>, enabled: bool) {
     let guard = discord_client_state.blocking_lock();
     if enabled {
         if guard.is_none() {

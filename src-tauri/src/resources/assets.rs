@@ -32,17 +32,17 @@ pub struct AssetObject {
     size: u64,
 }
 
-pub struct AssetManager {
+pub struct AssetManager<'a> {
     client: Client,
-    handle: AppHandle,
+    handle: &'a AppHandle,
     assets_dir: PathBuf,
     indexes_dir: PathBuf,
     objects_dir: PathBuf,
     libraries_dir: PathBuf,
 }
 
-impl AssetManager {
-    pub fn new(client: Client, handle: &AppHandle, config_dir: &Path) -> Self {
+impl<'a> AssetManager<'a> {
+    pub fn new(client: Client, handle: &'a AppHandle, config_dir: &Path) -> Self {
         let assets_dir = config_dir.join("assets");
         let indexes_dir = assets_dir.join("indexes");
         let objects_dir = assets_dir.join("objects");
@@ -50,7 +50,7 @@ impl AssetManager {
 
         Self {
             client,
-            handle: handle.clone(),
+            handle,
             assets_dir,
             indexes_dir,
             objects_dir,

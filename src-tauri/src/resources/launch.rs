@@ -95,7 +95,7 @@ async fn download_instance_assets(
         .get_instance(slug)
         .ok_or_else(|| anyhow!("Instance {} not found for asset update", slug))?;
     instance_to_update.settings.has_launched = true;
-    instances_config.update_instance(handle.clone(), instance_to_update)?;
+    instances_config.update_instance(handle, instance_to_update)?;
 
     Ok(())
 }
@@ -108,21 +108,19 @@ pub async fn launch(
     info!("Launching instance: {}", slug);
 
     let config_dir = config::get_config_dir()?;
-    let discord_client_state = state.discord_client.clone();
+    let discord_client_state = &state.discord_client;
 
-    let (game_url, needs_asset_download) = {
+    let (needs_asset_download, version_manifest) = {
         let instances_config = state.instances.lock().await;
         let instance_data = instances_config
             .get_instance(slug)
             .ok_or_else(|| anyhow!("Instance {} not found", slug))?;
 
-        (
-            instance_data.game.url.clone(),
-            !instance_data.settings.has_launched,
-        )
-    };
+        let needs_download = !instance_data.settings.has_launched;
+        let manifest = get_version_manifest(&state, &instance_data.game.url).await?;
 
-    let version_manifest = get_version_manifest(&state, &game_url).await?;
+        (needs_download, manifest)
+    };
 
     if needs_asset_download {
         download_instance_assets(&state, &handle, slug, &version_manifest, &config_dir).await?;
@@ -153,11 +151,11 @@ pub async fn launch(
     let start_time = Instant::now();
 
     let launch_game_result = launch_game(
-        instance_game_launch.clone(),
+        &instance_game_launch,
         &instance_dir,
         &version_manifest,
-        handle.clone(),
-        discord_client_state.clone(),
+        &handle,
+        discord_client_state,
     );
 
     info!("Stopped instance: {}", slug);
@@ -178,7 +176,7 @@ pub async fn launch(
             instance_to_update.settings.has_launched = true;
         }
 
-        instances_config.update_instance(handle.clone(), instance_to_update)?;
+        instances_config.update_instance(&handle, instance_to_update)?;
     }
 
     launch_game_result?;
@@ -187,11 +185,11 @@ pub async fn launch(
 }
 
 fn launch_game(
-    instance: Instance,
+    instance: &Instance,
     instance_dir: &Path,
     version_manifest: &VersionManifest,
-    handle: AppHandle,
-    discord_client_state: Arc<Mutex<Option<DiscordIpcClient>>>,
+    handle: &AppHandle,
+    discord_client_state: &Arc<Mutex<Option<DiscordIpcClient>>>,
 ) -> Result<(), Error> {
     let config = config::get_config()?;
     let config_dir = config::get_config_dir()?;
@@ -202,7 +200,7 @@ fn launch_game(
 
     if config.rich_presence {
         discord::set_activity(
-            discord_client_state.clone(),
+            discord_client_state,
             format!("Playing {}", instance.name),
             format!("Version: {}", instance.game.version),
         );
@@ -291,64 +289,34 @@ fn launch_game(
         );
     }
 
-    let mut child = command
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .spawn()
-        .map_err(|e| {
-            if let Err(err_emit) = handle.emit(
-                &format!("{}-launch-finished", slug_arc),
-                Payload {
-                    message: "Game launch failed to start",
-                },
-            ) {
-                error!(
-                    "Failed to emit game launch finished event for {} after spawn error: {}",
-                    instance.slug, err_emit
-                );
-            }
-            Error::msg(format!("Failed to launch game: {}", e))
-        })?;
+    let mut child = command.stdout(Stdio::piped()).spawn().map_err(|e| {
+        if let Err(err_emit) = handle.emit(
+            &format!("{}-launch-finished", slug_arc),
+            Payload {
+                message: "Game launch failed to start",
+            },
+        ) {
+            error!(
+                "Failed to emit game launch finished event for {} after spawn error: {}",
+                instance.slug, err_emit
+            );
+        }
+        Error::msg(format!("Failed to launch game: {}", e))
+    })?;
 
     let stdout = child
         .stdout
         .take()
         .ok_or_else(|| anyhow!("Failed to capture stdout from game process"))?;
-    let stderr = child
-        .stderr
-        .take()
-        .ok_or_else(|| anyhow!("Failed to capture stderr from game process"))?;
 
     let stdout_handle = handle.clone();
     let slug = Arc::clone(&slug_arc);
     thread::spawn(move || {
         let reader = BufReader::new(stdout);
         for line in reader.lines().map_while(Result::ok) {
-            let event_payload = format!("[stdout] {}", line);
-            if let Err(e) = stdout_handle.emit(
-                &format!("{}-log", slug),
-                Payload {
-                    message: &event_payload,
-                },
-            ) {
+            if let Err(e) = stdout_handle.emit(&format!("{}-log", slug), Payload { message: &line })
+            {
                 error!("Failed to send stdout event: {}", e);
-            }
-        }
-    });
-
-    let stderr_handle = handle.clone();
-    let slug = Arc::clone(&slug_arc);
-    thread::spawn(move || {
-        let reader = BufReader::new(stderr);
-        for line in reader.lines().map_while(Result::ok) {
-            let event_payload = format!("[stderr] {}", line);
-            if let Err(e) = stderr_handle.emit(
-                &format!("{}-log", slug),
-                Payload {
-                    message: &event_payload,
-                },
-            ) {
-                error!("Failed to send stderr event: {}", e);
             }
         }
     });
