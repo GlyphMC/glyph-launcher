@@ -80,23 +80,21 @@
 </script>
 
 <form onsubmit={handleSubmit}>
+	<h2 class="text-lg font-semibold text-zinc-50">Minecraft</h2>
 	<div class="mt-4">
-		<h2 class="text-lg font-semibold text-zinc-50">Minecraft</h2>
-		<div class="mt-4">
-			<div class="inline-flex items-center">
-				<Checkbox bind:checked={startMaximized} />
-				<Label class="ml-2 text-zinc-50">Start maximised</Label>
-			</div>
+		<div class="inline-flex items-center">
+			<Checkbox bind:checked={startMaximized} />
+			<Label class="ml-2 text-zinc-50">Start maximised</Label>
 		</div>
-		<div class="mt-4 flex space-x-4">
-			<div>
-				<Label class={`mb-2 block text-zinc-50 ${windowDimensionsDisabled ? "opacity-50" : ""}`}>Window Width</Label>
-				<Input type="number" bind:value={windowWidth} disabled={windowDimensionsDisabled} />
-			</div>
-			<div>
-				<Label class={`mb-2 block text-zinc-50 ${windowDimensionsDisabled ? "opacity-50" : ""}`}>Window Height</Label>
-				<Input type="number" bind:value={windowHeight} disabled={windowDimensionsDisabled} />
-			</div>
+	</div>
+	<div class="mt-4 flex space-x-4">
+		<div>
+			<Label class={`mb-2 block text-zinc-50 ${windowDimensionsDisabled ? "opacity-50" : ""}`}>Window Width</Label>
+			<Input type="number" bind:value={windowWidth} disabled={windowDimensionsDisabled} />
+		</div>
+		<div>
+			<Label class={`mb-2 block text-zinc-50 ${windowDimensionsDisabled ? "opacity-50" : ""}`}>Window Height</Label>
+			<Input type="number" bind:value={windowHeight} disabled={windowDimensionsDisabled} />
 		</div>
 	</div>
 	<div class="mt-4 flex flex-col">

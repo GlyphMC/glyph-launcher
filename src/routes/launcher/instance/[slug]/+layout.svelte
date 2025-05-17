@@ -19,7 +19,52 @@
 	let instance = $state<Instance>();
 	let isRunning = $state(false);
 
-	onMount(async () => await getInstance());
+	let navLinksContainer = $state<HTMLElement | null>(null);
+	let underlineLeft = $state(0);
+	let underlineWidth = $state(0);
+	let initialUpdateDone = $state(false);
+
+	function updateUnderlinePosition(useViewTransition = true) {
+		if (!navLinksContainer) return;
+
+		const updateStyles = () => {
+			if (!navLinksContainer) return;
+			const activeLink = navLinksContainer.querySelector<HTMLAnchorElement>('a[aria-current="page"]');
+			if (activeLink) {
+				const activeLinkRect = activeLink.getBoundingClientRect();
+				const containerRect = navLinksContainer.getBoundingClientRect();
+
+				underlineLeft = activeLinkRect.left - containerRect.left;
+				underlineWidth = activeLinkRect.width;
+			} else {
+				underlineLeft = 0;
+				underlineWidth = 0;
+			}
+		};
+
+		if (useViewTransition && document.startViewTransition) {
+			document.startViewTransition(() => {
+				updateStyles();
+			});
+		} else {
+			updateStyles();
+		}
+	}
+
+	onMount(async () => {
+		await getInstance();
+		requestAnimationFrame(() => {
+			updateUnderlinePosition(false);
+			initialUpdateDone = true;
+		});
+	});
+
+	$effect(() => {
+		if (navLinksContainer && initialUpdateDone) {
+			const _currentHash = page.url.hash;
+			updateUnderlinePosition(true);
+		}
+	});
 
 	function formatTimePlayed(totalSeconds: number): string {
 		if (totalSeconds === undefined || totalSeconds === null || totalSeconds === 0) return "Never";
@@ -134,8 +179,6 @@
 
 		return () => unlistenFns.forEach((unlisten) => unlisten());
 	};
-
-	$inspect(page.url.hash);
 </script>
 
 <InstanceAssetsDownloadPopUp />
@@ -168,34 +211,40 @@
 		</Button>
 	</div>
 
-	<div class="mt-5 flex space-x-10 px-10 text-xl font-bold">
-		{#each data.sections as section}
-			{@const sectionPath = `/#/launcher/instance/${data.slug}/${section.slug}`}
-			{@const isActive = page.url.hash === sectionPath}
-			<a
-				href={sectionPath}
-				aria-current={isActive ? "page" : undefined}
-				class="hover:text-zinc-200"
-				class:text-zinc-50={isActive}
-				class:underline={isActive}
-				class:underline-offset-4={isActive}>
-				{section.title}
-			</a>
-		{/each}
+	<div class="relative mt-5 px-10 text-xl" bind:this={navLinksContainer}>
+		<div class="flex space-x-10">
+			{#each data.sections as section}
+				{@const sectionPath = `#/launcher/instance/${data.slug}/${section.slug}`}
+				{@const isActive = page.url.hash === sectionPath}
+				<a
+					href={sectionPath}
+					aria-current={isActive ? "page" : undefined}
+					class:text-zinc-50={isActive}
+					class:text-zinc-400={!isActive}
+					class:font-bold={isActive}>
+					{section.title}
+				</a>
+			{/each}
+		</div>
+
+		{#if initialUpdateDone && navLinksContainer}
+			<div
+				id="nav-underline"
+				class="absolute bottom-0 h-0.5 bg-white"
+				style:left="{underlineLeft}px"
+				style:width="{underlineWidth}px"
+				role="presentation">
+			</div>
+		{/if}
 	</div>
 
-	<div class="px-10">
+	<div class="px-10 pt-5">
 		{@render children()}
 	</div>
 </div>
 
 <style>
-	a[aria-current="page"] {
-		font-weight: bold;
-		text-shadow: 0 0 0.5px currentColor;
-		text-decoration: underline !important;
-		text-decoration-thickness: 2px;
-		text-underline-offset: 4px;
-		border: 3px solid red !important;
+	#nav-underline {
+		view-transition-name: nav-section-underline;
 	}
 </style>
