@@ -1,16 +1,13 @@
 <script lang="ts">
-	import { onMount, onDestroy } from "svelte";
 	import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 	import { page } from "$app/state";
 	import type { Payload } from "$lib/types";
+	import type { Attachment } from "svelte/attachments";
 
 	let logMessages = $state<string[]>([]);
-	let logContainerElement: HTMLDivElement | null = $state(null);
-	let unlistenFn: UnlistenFn | null = null;
 	let wrapLines = $state(true);
 
 	const slug = page.params.slug;
-	const eventName = `${slug}-log`.replaceAll(".", "_");
 
 	function toggleLineWrap() {
 		wrapLines = !wrapLines;
@@ -20,33 +17,32 @@
 		logMessages = [];
 	}
 
-	onMount(() => {
-		console.log(`Log page mounted for slug: ${slug}. Listening for event: ${eventName}`);
+	const scrollToBottom: Attachment = (element) => {
+		const eventName = `${slug}-log`.replaceAll(".", "_");
+		let unlistenFn: UnlistenFn | null = null;
 
-		(async () => {
+		const setupListener = async () => {
 			try {
 				unlistenFn = await listen<Payload>(eventName, (event) => {
 					if (event.payload.message) {
-						logMessages = [...logMessages, event.payload.message];
-						if (logContainerElement) {
-							setTimeout(() => {
-								logContainerElement!.scrollTop = logContainerElement!.scrollHeight;
-							}, 0);
-						}
+						logMessages.push(event.payload.message);
+
+						setTimeout(() => {
+							element.scrollTop = element.scrollHeight;
+						}, 0);
 					} else {
 						console.warn("Received log event with unexpected payload:", event.payload);
 					}
 				});
-				console.log(`Successfully listening to ${eventName}`);
-			} catch (e) {
-				console.error(`Failed to listen to event ${eventName}:`, e);
+			} catch (error) {
+				console.error(`Failed to attach listener for event "${eventName}":`, error);
 			}
-		})();
-	});
+		};
 
-	onDestroy(() => {
-		unlistenFn?.();
-	});
+		setupListener();
+
+		return () => unlistenFn?.();
+	};
 </script>
 
 <div class="flex h-screen flex-col overflow-hidden bg-[#1e1e2e] p-[10px] font-mono text-[#cdd6f4]">
@@ -64,12 +60,12 @@
 		</button>
 	</div>
 	<div
-		bind:this={logContainerElement}
-		class="flex-grow overflow-y-auto rounded bg-[#181825] p-[8px]"
+		class="flex-grow select-none overflow-y-auto rounded bg-[#181825] p-[8px]"
 		class:whitespace-pre-wrap={wrapLines}
 		class:break-all={wrapLines}
 		class:whitespace-pre={!wrapLines}
-		class:overflow-x-auto={!wrapLines}>
+		class:overflow-x-auto={!wrapLines}
+		{@attach scrollToBottom}>
 		{#if logMessages.length === 0}
 			<p class="pt-[20px] text-center text-[#6c7086]">Waiting for logs...</p>
 		{/if}

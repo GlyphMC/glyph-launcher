@@ -8,7 +8,7 @@
 	import { onMount } from "svelte";
 	import { invoke } from "@tauri-apps/api/core";
 	import type { JavaConfig, JavaTestInfo, ManualJava } from "$lib/types";
-	import { saveJavaToConfig } from "$lib/utils";
+	import { saveJavaToConfig } from "$lib/utils/JavaUtils";
 
 	let manualJava8 = $state<ManualJava>({ version: 8, path: "" });
 	let manualJava17 = $state<ManualJava>({ version: 17, path: "" });
@@ -17,9 +17,7 @@
 	let javaTestResults = $state<JavaTestInfo[]>([]);
 	let showManualJavaTestPopup = $state(false);
 
-	onMount(async () => {
-		await getJavaFromConfig();
-	});
+	onMount(async () => await getJavaFromConfig());
 
 	async function getJavaFromConfig() {
 		await invoke<JavaConfig>("get_java_from_config").then((data) => {
@@ -38,8 +36,6 @@
 			showManualJavaTestPopup = true;
 		});
 	}
-
-	$inspect(javaTestResults);
 
 	type Props = {
 		onComplete?: () => void;

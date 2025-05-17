@@ -277,32 +277,23 @@ fn launch_game(
 
     let formatted_slug = instance.slug.replace(".", "_");
     let slug_arc = Arc::new(formatted_slug);
+
+    let mut child = command
+        .stdout(Stdio::piped())
+        .spawn()
+        .map_err(|e| Error::msg(format!("Failed to launch game: {}", e)))?;
+
     if let Err(e) = handle.emit(
-        &format!("{}-launch-started", slug_arc),
+        &format!("{}-instance-started", slug_arc),
         Payload {
-            message: "Game launch started",
+            message: "Game instance started",
         },
     ) {
         error!(
-            "Failed to emit game launch started event for {}: {}",
+            "Failed to emit game instance started event for {}: {}",
             instance.slug, e
         );
     }
-
-    let mut child = command.stdout(Stdio::piped()).spawn().map_err(|e| {
-        if let Err(err_emit) = handle.emit(
-            &format!("{}-launch-finished", slug_arc),
-            Payload {
-                message: "Game launch failed to start",
-            },
-        ) {
-            error!(
-                "Failed to emit game launch finished event for {} after spawn error: {}",
-                instance.slug, err_emit
-            );
-        }
-        Error::msg(format!("Failed to launch game: {}", e))
-    })?;
 
     let stdout = child
         .stdout
@@ -326,13 +317,13 @@ fn launch_game(
         .map_err(|e| Error::msg(format!("Failed to wait for game process: {}", e)))?;
 
     if let Err(e) = handle.emit(
-        &format!("{}-launch-finished", slug_arc),
+        &format!("{}-instance-stopped", slug_arc),
         Payload {
-            message: "Game launch finished",
+            message: "Game instance stopped",
         },
     ) {
         error!(
-            "Failed to emit game launch finished event for {}: {}",
+            "Failed to emit game instance stopped event for {}: {}",
             instance.slug, e
         );
     }

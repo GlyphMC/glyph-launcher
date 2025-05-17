@@ -13,13 +13,8 @@
 
 	const controller = new SidebarController();
 
-	onMount(async () => {
-		await controller.init();
-	});
-
-	onDestroy(() => {
-		controller.cleanup();
-	});
+	onMount(async () => await controller.init());
+	onDestroy(() => controller.cleanup());
 </script>
 
 {#if authService.showLoginPopUp}

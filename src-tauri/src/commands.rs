@@ -1,6 +1,7 @@
 use std::path::PathBuf;
 
 use anyhow::Result;
+use log::error;
 use tauri::{AppHandle, Manager, State};
 
 use crate::{
@@ -22,7 +23,7 @@ pub async fn login(state: State<'_, AppState>, handle: AppHandle) -> Result<Prof
     match auth::auth::login(&state, handle, login_handle).await {
         Ok(profile_response) => Ok(Profile::from(profile_response)),
         Err(e) => {
-            log::error!("Login failed: {}", e);
+            error!("Login failed: {}", e);
             Err(())
         }
     }
@@ -164,12 +165,27 @@ pub async fn launch_instance(
     slug: String,
 ) -> Result<(), ()> {
     if let Err(e) = resources::launch::launch(state, handle, &slug).await {
-        eprintln!("Error launching instance: {:?}", e);
+        error!("Error launching instance: {:?}", e);
         return Err(());
     }
 
     Ok(())
 }
+
+/* #[tauri::command]
+pub async fn kill_instance(
+    state: State<'_, AppState>,
+    handle: AppHandle,
+    slug: String,
+) -> Result<(), ()> {
+    match resources::launch::kill_instance(&state, &handle, &slug).await {
+        Ok(_) => Ok(()),
+        Err(e) => {
+            error!("Failed to kill instance {}: {}", slug, e);
+            Err(())
+        }
+    }
+} */
 
 #[tauri::command]
 pub async fn get_versions(state: State<'_, AppState>) -> Result<Vec<Version>, ()> {

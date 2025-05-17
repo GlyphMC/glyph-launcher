@@ -3,10 +3,11 @@
 	import { Button } from "$lib/components/ui/button";
 	import { ProgressBar } from "./ProgressBar.svelte";
 	import type { JavaDownloadState, JavaExtractState, ProgressEvent, JavaProgress, JavaPaths, DownloadPaths } from "$lib/types";
-	import { saveJavaToConfig } from "$lib/utils";
+	import { saveJavaToConfig } from "$lib/utils/JavaUtils";
 	import { onMount } from "svelte";
-	import { listen } from "@tauri-apps/api/event";
+	import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 	import { invoke } from "@tauri-apps/api/core";
+	import type { Attachment } from "svelte/attachments";
 
 	let downloadState = $state<JavaDownloadState>("none");
 	let extractState = $state<JavaExtractState>("none");
@@ -20,29 +21,39 @@
 	let isButtonDisabled = $derived(downloadState === "downloading" || extractState === "extracting");
 	let currentProgress = $derived(getCurrentProgress());
 
-	onMount(async () => {
+	onMount(async () => await downloadJava());
+
+	const javaSetup: Attachment = () => {
+		let unlistenFns: UnlistenFn[] = [];
+
+		const setupEventListeners = async () => {
+			unlistenFns.push(await listen("java-download-started", () => (downloadState = "downloading")));
+			unlistenFns.push(
+				await listen<DownloadPaths>("java-download-finished", async (event) => {
+					downloadState = "done";
+					paths = event.payload.paths;
+					await startExtraction();
+				})
+			);
+
+			unlistenFns.push(await listen("java-extract-started", () => (extractState = "extracting")));
+			unlistenFns.push(
+				await listen("java-extract-finished", async () => {
+					extractState = "done";
+					await saveJavaToConfig(paths, true);
+				})
+			);
+
+			[8, 17, 21].forEach((version) => {
+				setProgressListener("java-download", "download", version);
+				setProgressListener("java-extract", "extract", version);
+			});
+		};
+
 		setupEventListeners();
-		await downloadJava();
-	});
 
-	function setupEventListeners() {
-		listen("download-started", () => (downloadState = "downloading"));
-		listen<DownloadPaths>("download-finished", async (event) => {
-			downloadState = "done";
-			paths = event.payload.paths;
-			await startExtraction();
-		});
-		listen("extract-started", () => (extractState = "extracting"));
-		listen("extract-finished", async () => {
-			extractState = "done";
-			await saveJavaToConfig(paths, true);
-		});
-
-		[8, 17, 21].forEach((version) => {
-			setProgressListener("java-download", "download", version);
-			setProgressListener("java-extract", "extract", version);
-		});
-	}
+		return () => unlistenFns.forEach((unlisten) => unlisten());
+	};
 
 	function setProgressListener(name: string, stateKey: keyof typeof javaProgress, version: number) {
 		listen<ProgressEvent>(`${name}-progress-${version}`, (event) => {
@@ -99,7 +110,7 @@
 		</Card.Header>
 
 		<Card.Content>
-			<div class="flex flex-col space-y-2">
+			<div {@attach javaSetup} class="flex flex-col space-y-2">
 				{@render ProgressBar(currentProgress[8], "Java 8")}
 				{@render ProgressBar(currentProgress[17], "Java 17")}
 				{@render ProgressBar(currentProgress[21], "Java 21")}

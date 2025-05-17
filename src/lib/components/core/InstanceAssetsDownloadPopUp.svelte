@@ -1,13 +1,13 @@
 <script lang="ts">
 	import * as Card from "$lib/components/ui/card";
-	import { ProgressBar } from "./ProgressBar.svelte";
+	import { ProgressBar } from "$lib/components/core/ProgressBar.svelte";
 	import type { AssetsDownloadState, AssetsDownloadProgress, ProgressEvent } from "$lib/types";
-	import { onDestroy, onMount } from "svelte";
 	import { listen, type UnlistenFn } from "@tauri-apps/api/event";
+	import type { Attachment } from "svelte/attachments";
 
 	let isVisible = $state(false);
 	let downloadState = $state<AssetsDownloadState>("none");
-	let downloadProgress = $state<AssetsDownloadProgress>({
+	let progress = $state<AssetsDownloadProgress>({
 		assets: 0,
 		libraries: 0,
 		versionJar: 0
@@ -15,47 +15,42 @@
 
 	let statusText = $derived(getStatusText(downloadState));
 
-	let unlistenStarted: UnlistenFn | undefined;
-	let unlistenFinished: UnlistenFn | undefined;
-	let unlistenProgressAssets: UnlistenFn | undefined;
-	let unlistenProgressLibraries: UnlistenFn | undefined;
-	let unlistenProgressVersionJar: UnlistenFn | undefined;
+	const downloadProgress: Attachment = () => {
+		let unlistenFns: UnlistenFn[] = [];
 
-	onMount(() => {
+		const setupEventListeners = async () => {
+			unlistenFns.push(
+				await listen("instance-download-assets-started", () => {
+					downloadState = "assets";
+					isVisible = true;
+				})
+			);
+
+			unlistenFns.push(
+				await listen("instance-download-assets-finished", () => {
+					downloadState = "done";
+					isVisible = false;
+				})
+			);
+
+			const assetTypes: ("assets" | "libraries" | "version-jar")[] = ["assets", "libraries", "version-jar"];
+
+			for (const type of assetTypes) {
+				const progressKey: keyof AssetsDownloadProgress = type === "version-jar" ? "versionJar" : type;
+
+				unlistenFns.push(
+					await listen<ProgressEvent>(`instance-download-${type}-progress`, (event) => {
+						progress[progressKey] = event.payload.percentage;
+						downloadState = type;
+					})
+				);
+			}
+		};
+
 		setupEventListeners();
-	});
 
-	onDestroy(() => {
-		unlistenStarted?.();
-		unlistenFinished?.();
-		unlistenProgressAssets?.();
-		unlistenProgressLibraries?.();
-		unlistenProgressVersionJar?.();
-	});
-
-	async function setupEventListeners() {
-		unlistenStarted = await listen("instance-download-assets-started", () => {
-			downloadState = "assets";
-			isVisible = true;
-		});
-		unlistenFinished = await listen("instance-download-assets-finished", () => {
-			downloadState = "done";
-			isVisible = false;
-		});
-
-		unlistenProgressAssets = await setProgressListener("assets");
-		unlistenProgressLibraries = await setProgressListener("libraries");
-		unlistenProgressVersionJar = await setProgressListener("version-jar");
-	}
-
-	async function setProgressListener(name: "assets" | "libraries" | "version-jar") {
-		const progressKey: keyof AssetsDownloadProgress = name === "version-jar" ? "versionJar" : name;
-
-		return await listen<ProgressEvent>(`instance-download-${name}-progress`, (event) => {
-			downloadProgress[name] = event.payload.percentage;
-			downloadState = name;
-		});
-	}
+		return () => unlistenFns.forEach((unlisten) => unlisten());
+	};
 
 	function getStatusText(downloadState: AssetsDownloadState): string {
 		if (downloadState === "assets") {
@@ -81,10 +76,10 @@
 			</Card.Header>
 
 			<Card.Content>
-				<div class="flex flex-col space-y-2">
-					{@render ProgressBar(downloadProgress["assets"], "Assets")}
-					{@render ProgressBar(downloadProgress["libraries"], "Libraries")}
-					{@render ProgressBar(downloadProgress["version-jar"], "Minecraft")}
+				<div {@attach downloadProgress} class="flex flex-col space-y-2">
+					{@render ProgressBar(progress["assets"], "Assets")}
+					{@render ProgressBar(progress["libraries"], "Libraries")}
+					{@render ProgressBar(progress["version-jar"], "Minecraft")}
 				</div>
 			</Card.Content>
 		</Card.Root>

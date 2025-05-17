@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{collections::HashMap, process, sync::Arc};
 
 use auth::auth::LoginHandle;
 use discord_rich_presence::DiscordIpcClient;
@@ -27,6 +27,7 @@ pub struct AppState {
     instances: Arc<Mutex<InstanceConfig>>,
     login_handle: LoginHandle,
     discord_client: Arc<Mutex<Option<DiscordIpcClient>>>,
+	running_instances: Arc<Mutex<HashMap<String, Arc<Mutex<Option<process::Child>>>>>>,
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -50,12 +51,14 @@ pub fn run() {
             ));
             let login_handle = LoginHandle::new();
             let discord_client = Arc::new(Mutex::new(None));
+			let running_instances = Arc::new(Mutex::new(HashMap::new()));
 
             AppState {
                 client,
                 instances,
                 login_handle,
                 discord_client,
+				running_instances,
             }
         })
         .setup(|app| {
@@ -139,6 +142,7 @@ pub fn run() {
             commands::update_instance,
             commands::delete_instance,
             commands::launch_instance,
+			// commands::kill_instance,
             commands::get_versions,
             commands::set_discord_activity,
             commands::toggle_discord_rpc,
