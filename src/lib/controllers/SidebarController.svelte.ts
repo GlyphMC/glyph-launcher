@@ -1,15 +1,14 @@
 import { goto } from "$app/navigation";
 import { fetchMinecraftProfiles } from "$lib/utils/AccountUtils";
 import { authService } from "$lib/services/AuthService.svelte";
-import type { Instance, MinecraftProfile } from "$lib/types";
-import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
+import { commands, type Instance, type Profile } from "$lib/bindings";
 
 export class SidebarController {
 	instances = $state<Instance[]>([]);
 	searchInput = $state("");
-	profiles = $state<MinecraftProfile[]>([]);
-	selectedProfile = $state<MinecraftProfile | undefined>(undefined);
+	profiles = $state<Profile[]>([]);
+	selectedProfile = $state<Profile | undefined>(undefined);
 
 	filteredInstances = $derived(() => {
 		if (this.searchInput.trim() === "") {
@@ -30,13 +29,14 @@ export class SidebarController {
 	}
 
 	async fetchInstances() {
-		try {
-			const data = await invoke<Instance[]>("get_instances");
-			this.instances = data;
-		} catch (error) {
-			console.error("Failed to fetch instances:", error);
-			this.instances = [];
-		}
+		await commands.getInstances().then((res) => {
+			if (res.status === "ok") {
+				this.instances = res.data;
+			} else {
+				console.error("Failed to fetch instances:", res.error);
+				this.instances = [];
+			}
+		});
 	}
 
 	async loadMinecraftProfiles() {
@@ -79,14 +79,13 @@ export class SidebarController {
 			return;
 		}
 
-		try {
-			await invoke("delete_account", { id: this.selectedProfile.id }).then(() => {
+		await commands.deleteAccount(this.selectedProfile.id).then((res) => {
+			if (res.status === "ok") {
 				console.log("Account deleted successfully");
-			});
-			await this.loadMinecraftProfiles();
-		} catch (error) {
-			console.error("Logout failed:", error);
-		}
+			} else {
+				console.error("Failed to delete account:", res.error);
+			}
+		});
 	}
 
 	handleAddInstanceClick() {

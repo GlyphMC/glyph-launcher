@@ -2,8 +2,9 @@ use std::{path::PathBuf, process::Command};
 
 use anyhow::Error;
 use serde::{Deserialize, Serialize};
+use specta::Type;
 
-#[derive(Serialize, Deserialize, Debug, Default)]
+#[derive(Serialize, Deserialize, Debug, Default, Type)]
 pub struct JavaTestInfo {
     pub valid: bool,
     pub version: u8,

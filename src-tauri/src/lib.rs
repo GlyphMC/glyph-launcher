@@ -6,7 +6,9 @@ use instance::InstanceConfig;
 use log::{error, info};
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
-use tauri::{Manager, WindowEvent};
+use specta_typescript::{BigIntExportBehavior, Typescript};
+use tauri::{Manager, WindowEvent, Wry};
+use tauri_specta::{Builder, collect_commands};
 use tokio::sync::Mutex;
 
 mod auth;
@@ -32,6 +34,42 @@ pub struct AppState {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    let builder = Builder::<Wry>::new().commands(collect_commands![
+        commands::login,
+        commands::cancel_login,
+        commands::set_onboarding_complete,
+        commands::switch_account,
+        commands::delete_account,
+        commands::get_active_account,
+        commands::get_minecraft_profiles,
+        commands::download_java,
+        commands::extract_java,
+        commands::test_java,
+        commands::save_java_to_config,
+        commands::get_java_from_config,
+        commands::get_instances,
+        commands::get_instance,
+        commands::create_instance,
+        commands::update_instance,
+        commands::delete_instance,
+        commands::launch_instance,
+        // commands::kill_instance,
+        commands::get_versions,
+        commands::set_discord_activity,
+        commands::toggle_discord_rpc,
+        commands::get_launcher_settings,
+        commands::save_launcher_settings,
+        commands::get_avatar,
+    ]);
+
+    #[cfg(debug_assertions)]
+    builder
+        .export(
+            Typescript::default().bigint(BigIntExportBehavior::Number),
+            "../src/lib/bindings.ts",
+        )
+        .expect("Failed to export TS bindings");
+
     tauri::Builder::default()
         .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
             let _ = app
@@ -61,7 +99,10 @@ pub fn run() {
                 running_instances,
             }
         })
-        .setup(|app| {
+        .invoke_handler(builder.invoke_handler())
+        .setup(move |app| {
+            builder.mount_events(app);
+
             let handle = app.handle();
             let window = handle.get_webview_window("main").unwrap();
 
@@ -94,7 +135,12 @@ pub fn run() {
             let discord_client_state = &handle.state::<AppState>().discord_client;
 
             if config.rich_presence {
-                discord::connect(discord_client_state);
+                let discord_client_arc_clone = discord_client_state.clone();
+                tauri::async_runtime::spawn(async move {
+                    if let Err(e) = discord::connect(&discord_client_arc_clone).await {
+                        error!("Failed to connect to Discord RPC: {:?}", e);
+                    }
+                });
             }
 
             info!("Completed onboarding: {}", config.completed_onboarding);
@@ -123,33 +169,6 @@ pub fn run() {
 
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![
-            commands::login,
-            commands::cancel_login,
-            commands::set_onboarding_complete,
-            commands::switch_account,
-            commands::delete_account,
-            commands::get_active_account,
-            commands::get_minecraft_profiles,
-            commands::download_java,
-            commands::extract_java,
-            commands::test_java,
-            commands::save_java_to_config,
-            commands::get_java_from_config,
-            commands::get_instances,
-            commands::get_instance,
-            commands::create_instance,
-            commands::update_instance,
-            commands::delete_instance,
-            commands::launch_instance,
-            // commands::kill_instance,
-            commands::get_versions,
-            commands::set_discord_activity,
-            commands::toggle_discord_rpc,
-            commands::get_launcher_settings,
-            commands::save_launcher_settings,
-            commands::get_avatar,
-        ])
         .run(tauri::generate_context!())
         .expect("Error while running Tauri Application");
 }

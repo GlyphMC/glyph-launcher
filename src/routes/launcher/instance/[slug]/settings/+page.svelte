@@ -5,11 +5,10 @@
 	import { Input } from "$lib/components/ui/input";
 	import { Textarea } from "$lib/components/ui/textarea";
 	import * as Select from "$lib/components/ui/select";
-	import type { Instance, JavaConfig } from "$lib/types";
 	import type { PageData } from "../$types";
-	import { invoke } from "@tauri-apps/api/core";
 	import { goto } from "$app/navigation";
 	import { onMount } from "svelte";
+	import { commands, type Instance, type JavaConfig } from "$lib/bindings";
 
 	let { data }: { data: PageData } = $props();
 	let startMaximized = $state(false);
@@ -33,27 +32,38 @@
 	let javaArguments = $state("");
 
 	async function getInstance() {
-		await invoke<Instance>("get_instance", { slug: data.slug }).then((data) => {
-			instance = data;
-
-			startMaximized = data.settings.maximized;
-			windowWidth = data.settings.windowWidth;
-			windowHeight = data.settings.windowHeight;
-			selectedJavaVersion = `java${data.java.version}`;
+		await commands.getInstance(data.slug).then((res) => {
+			if (res.status === "ok") {
+				instance = res.data;
+				startMaximized = instance.settings.maximized;
+				windowWidth = instance.settings.windowWidth;
+				windowHeight = instance.settings.windowHeight;
+				selectedJavaVersion = `java${instance.java.version}`;
+			} else {
+				console.error("Failed to get instance:", res.error);
+			}
 		});
 	}
 
 	async function deleteInstance() {
 		console.log("Deleting instance " + data.slug);
-		await invoke("delete_instance", { slug: data.slug }).then(() => {
-			console.log("Instance deleted");
-			goto("/#/launcher/");
+		await commands.deleteInstance(data.slug).then((res) => {
+			if (res.status === "ok") {
+				console.log("Instance deleted");
+				goto("/#/launcher/");
+			} else {
+				console.error("Failed to delete instance:", res.error);
+			}
 		});
 	}
 
 	async function getJavaFromConfig() {
-		await invoke<JavaConfig>("get_java_from_config").then((data) => {
-			javaConfig = data;
+		await commands.getJavaFromConfig().then((res) => {
+			if (res.status === "ok") {
+				javaConfig = res.data;
+			} else {
+				console.error("Failed to get Java from config:", res.error);
+			}
 		});
 	}
 
@@ -73,8 +83,12 @@
 		instance.java.path = simpleJavaConfig.find((java) => java.version === selectedJavaVersion)?.path || "";
 		instance.java.args = javaArguments.split(" ").filter((arg) => arg.trim() !== "");
 
-		await invoke("update_instance", { instance }).then(() => {
-			console.log("Instance updated");
+		await commands.updateInstance(instance).then((res) => {
+			if (res.status === "ok") {
+				console.log("Instance updated");
+			} else {
+				console.error("Failed to update instance:", res.error);
+			}
 		});
 	}
 </script>
@@ -120,6 +134,11 @@
 			<Textarea class="resize-none" placeholder="Enter Java Arguments here" bind:value={javaArguments} />
 		</div>
 	</div>
+	<!-- <div class="inline-flex items-center space-x-5 py-2">
+		<Label>RAM</Label>
+		<Slider bind:value={ram} max={10240} step={1024} class="w-60" type="single" />
+		<NumberFlow value={ram} format={{ useGrouping: false }} suffix=" MB" />
+	</div> -->
 	<div class="mt-8 flex items-center space-x-4">
 		<Button type="submit">Save Settings</Button>
 	</div>

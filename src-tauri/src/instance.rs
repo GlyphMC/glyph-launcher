@@ -3,6 +3,7 @@ use std::{fs, path::PathBuf};
 use anyhow::{Error, Result, anyhow};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
+use specta::Type;
 use tauri::{AppHandle, Emitter, State};
 
 use crate::{AppState, Payload, config, resources::version};
@@ -12,7 +13,7 @@ pub struct InstanceConfig {
     pub instances: Vec<Instance>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Type)]
 pub struct Instance {
     pub slug: String,
     pub name: String,
@@ -21,27 +22,27 @@ pub struct Instance {
     pub settings: Settings,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Type)]
 pub struct Game {
     pub version: String,
     pub modloader: Modloader,
     pub url: String,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Type)]
 pub struct Modloader {
     pub loader: String,
     pub version: Option<String>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Type)]
 pub struct Java {
     pub path: String,
     pub args: Vec<String>,
     pub version: u8,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Type)]
 #[serde(rename_all = "camelCase")]
 pub struct Settings {
     pub has_launched: bool,
@@ -52,6 +53,7 @@ pub struct Settings {
     #[serde(default)]
     pub time_played: u64,
     #[serde(default)]
+    #[specta(type = String)]
     pub last_played: Option<DateTime<Utc>>,
 }
 

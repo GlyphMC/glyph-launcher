@@ -6,9 +6,8 @@
 	import { platform } from "@tauri-apps/plugin-os";
 	import { open } from "@tauri-apps/plugin-dialog";
 	import { onMount } from "svelte";
-	import { invoke } from "@tauri-apps/api/core";
-	import type { JavaConfig, JavaTestInfo, ManualJava } from "$lib/types";
-	import { saveJavaToConfig } from "$lib/utils/JavaUtils";
+	import { saveJavaToConfig, type ManualJava } from "$lib/utils/JavaUtils";
+	import { commands, type JavaTestInfo } from "$lib/bindings";
 
 	let manualJava8 = $state<ManualJava>({ version: 8, path: "" });
 	let manualJava17 = $state<ManualJava>({ version: 17, path: "" });
@@ -20,20 +19,33 @@
 	onMount(async () => await getJavaFromConfig());
 
 	async function getJavaFromConfig() {
-		await invoke<JavaConfig>("get_java_from_config").then((data) => {
-			let { java8Path, java17Path, java21Path } = data;
-			manualJava8.path = java8Path;
-			manualJava17.path = java17Path;
-			manualJava21.path = java21Path;
+		await commands.getJavaFromConfig().then((res) => {
+			if (res.status === "ok") {
+				let { java8Path, java17Path, java21Path } = res.data;
+				manualJava8.path = java8Path;
+				manualJava17.path = java17Path;
+				manualJava21.path = java21Path;
+			} else {
+				console.error("Failed to get Java from config:", res.error);
+			}
 		});
 	}
 
 	async function testJava() {
-		await invoke<JavaTestInfo[]>("test_java", {
-			paths: [manualJava8.path, manualJava17.path, manualJava21.path]
-		}).then((data) => {
-			javaTestResults = data;
-			showManualJavaTestPopup = true;
+		if (!manualJava8.path || !manualJava17.path || !manualJava21.path) {
+			return;
+		}
+
+		await commands.testJava([manualJava8.path, manualJava17.path, manualJava21.path]).then((res) => {
+			if (res.status === "ok") {
+				javaTestResults = res.data.map((item) => ({
+					...item,
+					version: item.version
+				}));
+				showManualJavaTestPopup = true;
+			} else {
+				console.error("Failed to test Java:", res.error);
+			}
 		});
 	}
 

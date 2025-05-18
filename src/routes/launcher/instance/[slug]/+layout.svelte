@@ -1,8 +1,6 @@
 <script lang="ts">
 	import { onMount, type Snippet } from "svelte";
 	import type { LayoutData } from "./$types";
-	import type { Instance } from "$lib/types";
-	import { invoke } from "@tauri-apps/api/core";
 	import Clock from "lucide-svelte/icons/clock";
 	import CalendarClock from "lucide-svelte/icons/calendar-clock";
 	import SquareChevronRight from "lucide-svelte/icons/square-chevron-right";
@@ -16,6 +14,7 @@
 	import { page } from "$app/state";
 	import { scale } from "svelte/transition";
 	import { quintOut } from "svelte/easing";
+	import { commands, type Instance } from "$lib/bindings";
 
 	let { data, children }: { data: LayoutData; children: Snippet } = $props();
 	let instance = $state<Instance>();
@@ -98,28 +97,37 @@
 	}
 
 	async function launchInstance() {
-		try {
-			await invoke("launch_instance", { slug: data.slug });
-		} catch (error) {
-			console.error("Failed to launch instance:", error);
-		} finally {
-			await getInstance();
-		}
+		await commands
+			.launchInstance(data.slug)
+			.then((res) => {
+				if (res.status === "ok") {
+					console.log("Instance launched successfully");
+				} else {
+					console.error("Failed to launch instance:", res.error);
+				}
+			})
+			.then(async () => await getInstance());
 	}
 
 	async function killInstance() {
 		if (!isRunning) return;
 		console.log("Not implemented yet");
-		// try {
-		// 	await invoke("kill_instance", { slug: data.slug });
-		// } catch (error) {
-		// 	console.error("Failed to kill instance:", error);
-		// }
+		/* await commands.killInstance(data.slug).then((res) => {
+			if (res.status === "ok") {
+				console.log("Instance killed successfully");
+			} else {
+				console.error("Failed to kill instance:", res.error);
+			}
+		}); */
 	}
 
 	async function getInstance() {
-		await invoke<Instance>("get_instance", { slug: data.slug }).then((data) => {
-			instance = data;
+		await commands.getInstance(data.slug).then((res) => {
+			if (res.status === "ok") {
+				instance = res.data;
+			} else {
+				console.error("Failed to get instance:", res.error);
+			}
 		});
 	}
 
@@ -191,7 +199,7 @@
 	<div class="px-10 text-sm text-zinc-300">
 		<div class="flex items-center">
 			<Clock class="mr-2 size-4" />
-			<p>Time played: {formatTimePlayed(instance?.settings?.timePlayed ?? 0)}</p>
+			<p>Time played: {formatTimePlayed(Number(instance?.settings?.timePlayed) || 0)}</p>
 		</div>
 
 		<div class="mt-1 flex items-center">

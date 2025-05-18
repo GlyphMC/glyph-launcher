@@ -156,7 +156,8 @@ pub async fn launch(
         &version_manifest,
         &handle,
         discord_client_state,
-    );
+    )
+    .await;
 
     info!("Stopped instance: {}", slug);
 
@@ -184,7 +185,7 @@ pub async fn launch(
     Ok(())
 }
 
-fn launch_game(
+async fn launch_game(
     instance: &Instance,
     instance_dir: &Path,
     version_manifest: &VersionManifest,
@@ -203,7 +204,8 @@ fn launch_game(
             discord_client_state,
             format!("Playing {}", instance.name),
             format!("Version: {}", instance.game.version),
-        );
+        )
+        .await?;
     }
 
     let account = config
@@ -340,7 +342,8 @@ fn launch_game(
             discord_client_state,
             "Exploring the Launcher".to_string(),
             "Idle".to_string(),
-        );
+        )
+        .await?;
     }
 
     if !status.success() {

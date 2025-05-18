@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
+use specta::Type;
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Type)]
 pub struct Skin {
     id: String,
     state: String,
@@ -8,7 +9,7 @@ pub struct Skin {
     variant: String,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Type)]
 pub struct Cape {
     id: String,
     state: String,
@@ -16,10 +17,11 @@ pub struct Cape {
     alias: String,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Type)]
 #[serde(rename_all = "camelCase")]
 pub struct Account {
     pub active: bool,
+    #[specta(type = String)]
     pub expiry: u64,
     pub access_token: String,
     pub refresh_token: String,
@@ -43,7 +45,7 @@ impl Default for Account {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Type)]
 pub struct Profile {
     pub id: String,
     pub name: String,

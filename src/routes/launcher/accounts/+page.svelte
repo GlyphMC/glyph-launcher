@@ -1,5 +1,4 @@
 <script lang="ts">
-	import type { MinecraftProfile } from "$lib/types";
 	import { Button } from "$lib/components/ui/button";
 	import { Checkbox } from "$lib/components/ui/checkbox";
 	import { Label } from "$lib/components/ui/label";
@@ -7,8 +6,9 @@
 	import { authService } from "$lib/services/AuthService.svelte";
 	import { deleteAccount, fetchMinecraftProfiles, getActiveAccount, switchAccount } from "$lib/utils/AccountUtils";
 	import { useAvatar } from "$lib/utils/AvatarUtils";
+	import type { Profile } from "$lib/bindings";
 
-	let profiles = $state<MinecraftProfile[]>([]);
+	let profiles = $state<Profile[]>([]);
 	let activeProfileId = $state<string | undefined>(undefined);
 
 	async function loadAccountData() {

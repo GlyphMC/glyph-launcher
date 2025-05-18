@@ -1,4 +1,4 @@
-import { invoke } from "@tauri-apps/api/core";
+import { commands } from "$lib/bindings";
 
 const AVATAR_CACHE_PREFIX = "avatar_cache";
 const CACHE_DURATION = 1000 * 60 * 60; // 1 hour
@@ -35,9 +35,9 @@ export async function useAvatar(uuid: string | undefined | null): Promise<string
 	}
 
 	try {
-		const newDataUrl = await invoke<string>("get_avatar", { uuid });
-
-		if (newDataUrl) {
+		const res = await commands.getAvatar(uuid);
+		if (res.status === "ok" && res.data) {
+			const newDataUrl = res.data;
 			const newItem: CachedAvatar = {
 				dataUrl: newDataUrl,
 				timestamp: Date.now()
@@ -49,9 +49,9 @@ export async function useAvatar(uuid: string | undefined | null): Promise<string
 				console.error("Error writing avatar data URL to localStorage:", e);
 			}
 			return newDataUrl;
-		} else {
-			return "";
 		}
+
+		return "";
 	} catch (error) {
 		console.error(`Error fetching avatar data URL for ${uuid} via Tauri command:`, error);
 		return "";

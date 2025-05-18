@@ -3,6 +3,7 @@ use std::{fs, path::PathBuf};
 use anyhow::{Error, Result, anyhow};
 use dirs::config_dir;
 use serde::{Deserialize, Serialize};
+use specta::Type;
 use tauri::AppHandle;
 
 use crate::{auth::account::Account, java::structs::JavaConfig};
@@ -18,7 +19,7 @@ pub struct Config {
     pub use_discrete_gpu: bool,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Type)]
 #[serde(rename_all = "camelCase")]
 pub struct LauncherSettings {
     pub rich_presence: bool,

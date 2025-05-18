@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use specta::Type;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct JavaInfo {
@@ -18,7 +19,7 @@ pub struct Progress {
     pub percentage: f64,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Type)]
 #[serde(rename_all = "camelCase")]
 pub struct JavaConfig {
     pub java_8_path: String,

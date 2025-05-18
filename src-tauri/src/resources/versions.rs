@@ -1,6 +1,7 @@
 use anyhow::{Error, Result};
 use chrono::DateTime;
 use serde::{Deserialize, Serialize};
+use specta::Type;
 use tauri::State;
 
 use crate::AppState;
@@ -17,7 +18,7 @@ pub struct Latest {
     snapshot: String,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Type)]
 pub struct Version {
     id: String,
     r#type: String,

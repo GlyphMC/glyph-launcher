@@ -2,14 +2,20 @@
 	import * as Card from "$lib/components/ui/card";
 	import { Button } from "$lib/components/ui/button";
 	import { ProgressBar } from "./ProgressBar.svelte";
-	import type { JavaDownloadState, JavaExtractState, ProgressEvent, JavaProgress, JavaPaths, DownloadPaths } from "$lib/types";
-	import { saveJavaToConfig } from "$lib/utils/JavaUtils";
+	import {
+		saveJavaToConfig,
+		type DownloadPaths,
+		type JavaDownloadState,
+		type JavaExtractState,
+		type JavaProgress,
+		type ProgressEvent
+	} from "$lib/utils/JavaUtils";
 	import { onMount } from "svelte";
 	import { listen, type UnlistenFn } from "@tauri-apps/api/event";
-	import { invoke } from "@tauri-apps/api/core";
 	import type { Attachment } from "svelte/attachments";
 	import { scale } from "svelte/transition";
 	import { quintOut } from "svelte/easing";
+	import { commands } from "$lib/bindings";
 
 	let downloadState = $state<JavaDownloadState>("none");
 	let extractState = $state<JavaExtractState>("none");
@@ -91,18 +97,28 @@
 	}
 
 	async function downloadJava() {
-		await invoke<JavaPaths>("download_java").then((data) => {
-			paths = data.map((path) => path.replace(".zip", ""));
-			console.log("Java downloaded successfully");
+		await commands.downloadJava().then((res) => {
+			if (res.status === "ok") {
+				paths = res.data.map((path) => path.replace(".zip", ""));
+				console.log("Java downloaded successfully");
+			} else {
+				console.error("Java download failed:", res.error);
+			}
 		});
 	}
 
 	async function startExtraction() {
 		downloadState = "none";
-		await invoke<JavaPaths>("extract_java", { paths }).then((data) => {
-			console.log(data);
-			paths = data;
-			console.log("Java extracted successfully");
+		if (!paths || paths.length !== 3) return;
+
+		const pathsForExtraction: [string, string, string] = [paths[0], paths[1], paths[2]];
+		await commands.extractJava(pathsForExtraction).then((res) => {
+			if (res.status === "ok") {
+				paths = res.data.map((path) => path.replace(".zip", ""));
+				console.log("Java extracted successfully");
+			} else {
+				console.error("Java extraction failed:", res.error);
+			}
 		});
 	}
 

@@ -5,10 +5,14 @@
 	import * as DropdownMenu from "$lib/components/ui/dropdown-menu";
 	import JavaDownloadPopUp from "$lib/components/core/JavaDownloadPopUp.svelte";
 	import ManualJavaSetup from "$lib/components/core/ManualJavaSetup.svelte";
-	import type { LauncherSettings } from "$lib/types";
-	import { invoke } from "@tauri-apps/api/core";
 	import { onMount } from "svelte";
 	import { resetMode, setMode } from "mode-watcher";
+	import { commands } from "$lib/bindings";
+
+	type LauncherSettings = {
+		richPresence: boolean;
+		useDiscreteGpu: boolean;
+	};
 
 	let discordRichPresence = $state(true);
 	let useDiscreteGpu = $state(true);
@@ -19,17 +23,17 @@
 	let initialSettings: LauncherSettings | null = $state(null);
 
 	async function loadSettings() {
-		try {
-			await invoke<LauncherSettings>("get_launcher_settings").then((data) => {
-				initialSettings = data;
-				discordRichPresence = data.richPresence;
-				useDiscreteGpu = data.useDiscreteGpu;
+		await commands.getLauncherSettings().then((res) => {
+			if (res.status === "ok") {
+				initialSettings = res.data;
+				discordRichPresence = res.data.richPresence;
+				useDiscreteGpu = res.data.useDiscreteGpu;
 
 				console.log("Settings loaded", $state.snapshot(initialSettings));
-			});
-		} catch (error) {
-			console.error("Error loading settings:", error);
-		}
+			} else {
+				console.error("Failed to get launcher settings:", res.error);
+			}
+		});
 	}
 
 	onMount(async () => await loadSettings());
@@ -40,13 +44,13 @@
 			useDiscreteGpu: useDiscreteGpu
 		};
 
-		try {
-			await invoke("save_launcher_settings", { settings: settingsToSave });
-			initialSettings = { ...settingsToSave };
-			console.log("Settings saved", $state.snapshot(initialSettings));
-		} catch (error) {
-			console.error("Error saving settings:", error);
-		}
+		await commands.saveLauncherSettings(settingsToSave).then((res) => {
+			if (res.status === "ok") {
+				console.log("Settings saved", $state.snapshot(initialSettings));
+			} else {
+				console.error("Failed to save settings:", res.error);
+			}
+		});
 	}
 </script>
 

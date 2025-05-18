@@ -38,6 +38,7 @@
 					{:then avatarSrc}
 						{#if avatarSrc}
 							<img src={avatarSrc} alt="Avatar for {profile.name}" class="size-6 rounded" />
+							<span class="text-lg">{profile.name}</span>
 						{:else}
 							<div class="size-6 rounded bg-zinc-700"></div>
 						{/if}

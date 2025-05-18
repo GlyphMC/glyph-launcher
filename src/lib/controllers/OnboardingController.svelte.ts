@@ -2,9 +2,8 @@ import { goto } from "$app/navigation";
 import { page } from "$app/state";
 import { fetchMinecraftProfiles } from "$lib/utils/AccountUtils";
 import { authService } from "$lib/services/AuthService.svelte";
-import type { MinecraftProfile } from "$lib/types";
-import { invoke } from "@tauri-apps/api/core";
 import { resetMode, setMode } from "mode-watcher";
+import { commands, type Profile } from "$lib/bindings";
 
 const ONBOARDING_PATHS: ReadonlyArray<string> = [
 	"#/onboarding",
@@ -21,8 +20,8 @@ export class OnboardingController {
 	selectedTheme = $state<"dark" | "light" | "system">("system");
 
 	// Account setup
-	profiles = $state<MinecraftProfile[]>([]);
-	selectedProfile = $state<MinecraftProfile | undefined>(undefined);
+	profiles = $state<Profile[]>([]);
+	selectedProfile = $state<Profile | undefined>(undefined);
 
 	// Java installation
 	javaSetupComplete = $state(false);
@@ -103,7 +102,7 @@ export class OnboardingController {
 		authService.cancelLoginPopup();
 	}
 
-	selectProfile(profile: MinecraftProfile) {
+	selectProfile(profile: Profile) {
 		this.selectedProfile = profile;
 	}
 
@@ -152,13 +151,12 @@ export class OnboardingController {
 	}
 
 	async finishOnboarding() {
-		try {
-			await invoke("set_onboarding_complete");
-			console.log("Onboarding complete, navigating to launcher.");
-			await goto(LAUNCHER_PATH);
-		} catch (error) {
-			console.error("Failed to set onboarding complete:", error);
-		}
+		await commands.setOnboardingComplete().then(async (res) => {
+			if (res.status === "ok") {
+				console.log("Onboarding complete, navigating to launcher.");
+				await goto(LAUNCHER_PATH);
+			}
+		});
 	}
 
 	isNextDisabled(): boolean {

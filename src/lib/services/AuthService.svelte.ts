@@ -1,6 +1,6 @@
-import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
-import type { LoginDetailsEvent, MinecraftProfile } from "$lib/types";
+import type { LoginDetailsEvent } from "$lib/types";
+import { commands, type Profile } from "$lib/bindings";
 
 class AuthService {
 	loginCode = $state("");
@@ -31,19 +31,19 @@ class AuthService {
 	 * with the MinecraftProfile upon successful authentication.
 	 * @returns A Promise that resolves with the MinecraftProfile if login is successful, otherwise null.
 	 */
-	async startLogin(): Promise<MinecraftProfile | null> {
-		try {
-			// Ensure listener is active
-			if (!this.isInitialized) {
-				await this.init();
-			}
+	async startLogin(): Promise<Profile | null> {
+		if (!this.isInitialized) {
+			await this.init();
+		}
 
-			const profile = await invoke<MinecraftProfile>("login");
+		const res = await commands.login();
+
+		if (res.status === "ok") {
 			this.showLoginPopUp = false;
-
-			return profile;
-		} catch (error) {
-			console.error("Login process failed:", error);
+			return res.data;
+		} else {
+			console.error("Login command failed:", res.error);
+			this.showLoginPopUp = false;
 			return null;
 		}
 	}
@@ -53,12 +53,13 @@ class AuthService {
 	 */
 	async cancelLoginPopup() {
 		this.showLoginPopUp = false;
-		try {
-			await invoke("cancel_login");
-			console.log("Login flow cancelled via AuthService.");
-		} catch (error) {
-			console.error("Failed to cancel login via Tauri:", error);
-		}
+		await commands.cancelLogin().then((res) => {
+			if (res.status === "ok") {
+				this.showLoginPopUp = false;
+			} else {
+				console.error("Failed to cancel login:", res.error);
+			}
+		});
 	}
 
 	cleanup() {

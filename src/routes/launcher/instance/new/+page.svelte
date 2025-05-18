@@ -2,13 +2,10 @@
 	import { Checkbox } from "$lib/components/ui/checkbox";
 	import { Input } from "$lib/components/ui/input";
 	import { Label } from "$lib/components/ui/label";
-	import { Slider } from "$lib/components/ui/slider";
 	import { Button } from "$lib/components/ui/button";
 	import * as Select from "$lib/components/ui/select";
-	import type { Instance, Modloader, Version } from "$lib/types";
-	import { invoke } from "@tauri-apps/api/core";
 	import { goto } from "$app/navigation";
-	import NumberFlow from "@number-flow/svelte";
+	import { commands, type Instance, type Version } from "$lib/bindings";
 
 	let instanceName = $state("");
 	let latestReleaseVersion = $state<Version>();
@@ -16,16 +13,19 @@
 	let selectedVersion = $state<Version>();
 	let selectedVersionId = $state<string>("");
 	let showSnapshots = $state(false);
-	let modloader = $state<Modloader>("");
+	let modloader = $state<string>("");
 	let isModloaderVersionDisabled = $state(true);
 	let discordRichPresence = $state(true);
 	let startMaximized = $state(false);
-	let ram = $state(4096);
 
 	async function getVersions() {
-		invoke<Version[]>("get_versions").then((data) => {
-			versions = data;
-			latestReleaseVersion = versions.find((v) => v.type === "release");
+		await commands.getVersions().then((res) => {
+			if (res.status === "ok") {
+				versions = res.data;
+				latestReleaseVersion = versions.find((v) => v.type === "release");
+			} else {
+				console.error("Failed to get versions:", res.error);
+			}
 		});
 	}
 
@@ -35,13 +35,13 @@
 
 	$effect(() => {
 		selectedVersion = versions.find((v) => v.id === selectedVersionId);
-		isModloaderVersionDisabled = modloader === "Vanilla" || modloader === undefined || modloader === "";
+		isModloaderVersionDisabled = modloader == "Vanilla" || modloader === "";
 	});
 
 	let versionTrigger = $derived(versions.find((v) => v.id === selectedVersion?.id)?.id ?? "Select a version");
 	let modloaderTrigger = $derived(modloader ? modloader : "Select a modloader");
 
-	let isButtonDisabled = $derived(!instanceName || !selectedVersionId || !modloader || ram <= 0);
+	let isButtonDisabled = $derived(!instanceName || !selectedVersionId || !modloader);
 
 	async function createInstance(version: Version) {
 		let instance: Instance = {
@@ -50,7 +50,8 @@
 			game: {
 				version: version.id,
 				modloader: {
-					loader: modloader
+					loader: modloader as string,
+					version: null
 				},
 				url: version.url
 			},
@@ -63,15 +64,18 @@
 				hasLaunched: false,
 				richPresence: discordRichPresence,
 				maximized: startMaximized,
-				memory: ram,
 				windowWidth: 854,
 				windowHeight: 480,
 				timePlayed: 0
 			}
 		};
-		await invoke("create_instance", { instance }).then(() => {
-			console.log("Instance created successfully");
-			goto(`/#/launcher/instance/${instance.slug}`);
+		await commands.createInstance(instance).then((res) => {
+			if (res.status === "ok") {
+				console.log("Instance created successfully");
+				goto(`/#/launcher/instance/${instance.slug}`);
+			} else {
+				console.error("Failed to create instance:", res.error);
+			}
 		});
 	}
 
@@ -114,7 +118,7 @@
 					{modloaderTrigger}
 				</Select.Trigger>
 				<Select.Content>
-					<Select.Item value="Vanilla"></Select.Item>
+					<Select.Item value="Vanilla">Vanilla</Select.Item>
 					<Select.Item value="Forge">Forge</Select.Item>
 					<Select.Item value="Neoforge">Neoforge</Select.Item>
 					<Select.Item value="Fabric">Fabric</Select.Item>
@@ -139,11 +143,6 @@
 		<div class="inline-flex items-center space-x-2">
 			<Checkbox bind:checked={startMaximized} />
 			<Label class="text-zinc-50">Start maximised</Label>
-		</div>
-		<div class="inline-flex items-center space-x-5 py-2">
-			<Label>RAM</Label>
-			<Slider bind:value={ram} max={10240} step={1024} class="w-60" type="single" />
-			<NumberFlow value={ram} format={{ useGrouping: false }} suffix=" MB" />
 		</div>
 		<Button onclick={() => selectedVersion && createInstance(selectedVersion)} disabled={isButtonDisabled} class="h-10 w-20">Create</Button>
 	</div>
