@@ -10,6 +10,7 @@
 	import LoginPopUp from "./LoginPopUp.svelte";
 	import { SidebarController } from "$lib/controllers/SidebarController.svelte";
 	import { authService } from "$lib/services/AuthService.svelte";
+	import { useAvatar } from "$lib/utils/AvatarUtils";
 
 	const controller = new SidebarController();
 
@@ -58,10 +59,21 @@
 									<Sidebar.MenuButton
 										{...props}
 										class="flex items-center gap-2 font-bold data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground">
-										<img
-											src={`https://crafatar.com/avatars/${controller.selectedProfile?.id}`}
-											alt="Profile picture of {controller.selectedProfile?.name}"
-											class="h-6 w-6 rounded border border-black" />
+										{#await useAvatar(controller.selectedProfile?.id)}
+											<div class="h-6 w-6 animate-pulse rounded border border-black bg-zinc-700"></div>
+										{:then avatarSrc}
+											{#if avatarSrc}
+												<img
+													src={avatarSrc}
+													alt="Profile picture of {controller.selectedProfile?.name}"
+													class="h-6 w-6 rounded border border-black" />
+											{:else}
+												<div class="h-6 w-6 rounded border border-black bg-zinc-700"></div>
+											{/if}
+										{:catch _}
+											<div class="h-6 w-6 rounded border border-black bg-zinc-700"></div>
+										{/await}
+
 										{controller.selectedProfile?.name}
 										<ChevronUp class="ml-auto" />
 									</Sidebar.MenuButton>

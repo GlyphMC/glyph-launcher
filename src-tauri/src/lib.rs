@@ -148,6 +148,7 @@ pub fn run() {
             commands::toggle_discord_rpc,
             commands::get_launcher_settings,
             commands::save_launcher_settings,
+            commands::get_avatar,
         ])
         .run(tauri::generate_context!())
         .expect("Error while running Tauri Application");

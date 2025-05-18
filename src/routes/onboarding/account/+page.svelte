@@ -4,6 +4,7 @@
 	import MoveLeft from "lucide-svelte/icons/move-left";
 	import LoginPopUp from "$lib/components/core/LoginPopUp.svelte";
 	import { onboardingController } from "$lib/controllers/OnboardingController.svelte";
+	import { useAvatar } from "$lib/utils/AvatarUtils";
 </script>
 
 {#if onboardingController.showLoginPopUp}
@@ -32,8 +33,17 @@
 					variant="outline"
 					class="flex w-64 items-center gap-3 p-4 {onboardingController.selectedProfile?.id === profile.id ? 'ring-2 ring-zinc-400' : ''}"
 					onclick={() => onboardingController.selectProfile(profile)}>
-					<img src={`https://crafatar.com/avatars/${profile.id}?overlay=true`} alt="Avatar" class="size-6 rounded" />
-					<span class="text-lg">{profile.name}</span>
+					{#await useAvatar(profile.id)}
+						<div class="size-6 animate-pulse rounded bg-zinc-700"></div>
+					{:then avatarSrc}
+						{#if avatarSrc}
+							<img src={avatarSrc} alt="Avatar for {profile.name}" class="size-6 rounded" />
+						{:else}
+							<div class="size-6 rounded bg-zinc-700"></div>
+						{/if}
+					{:catch _}
+						<div class="size-6 rounded bg-zinc-700"></div>
+					{/await}
 				</Button>
 			{/each}
 		</div>

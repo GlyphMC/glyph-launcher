@@ -6,6 +6,7 @@
 	import LoginPopUp from "$lib/components/core/LoginPopUp.svelte";
 	import { authService } from "$lib/services/AuthService.svelte";
 	import { deleteAccount, fetchMinecraftProfiles, getActiveAccount, switchAccount } from "$lib/utils/AccountUtils";
+	import { useAvatar } from "$lib/utils/AvatarUtils";
 
 	let profiles = $state<MinecraftProfile[]>([]);
 	let activeProfileId = $state<string | undefined>(undefined);
@@ -82,10 +83,18 @@
 						onclick={() => handleSwitchAccount(profile.id)}
 						id={`profile-checkbox-${profile.id}`}
 						aria-label={`Set ${profile.name} as active account`} />
-					<img
-						src={`https://crafatar.com/avatars/${profile.id}?size=40&overlay`}
-						alt="Profile avatar for {profile.name}"
-						class="h-10 w-10 rounded" />
+					{#await useAvatar(profile.id)}
+						<div class="h-10 w-10 animate-pulse rounded bg-zinc-700"></div>
+					{:then avatarSrc}
+						{#if avatarSrc}
+							<img src={avatarSrc} alt="Profile avatar for {profile.name}" class="h-10 w-10 rounded" />
+						{:else}
+							<div class="h-10 w-10 rounded bg-zinc-700"></div>
+						{/if}
+					{:catch _}
+						<div class="h-10 w-10 rounded bg-zinc-700"></div>
+					{/await}
+
 					<div class="ml-4 flex flex-col">
 						<Label for={`profile-checkbox-${profile.id}`} class="cursor-pointer font-semibold text-zinc-50">{profile.name}</Label>
 						<Label class="mt-1 text-xs text-zinc-400">{profile.id}</Label>

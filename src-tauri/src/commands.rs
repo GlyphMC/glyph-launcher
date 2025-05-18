@@ -227,3 +227,14 @@ pub fn save_launcher_settings(handle: AppHandle, settings: LauncherSettings) -> 
 
     Ok(())
 }
+
+#[tauri::command]
+pub async fn get_avatar(state: State<'_, AppState>, uuid: String) -> Result<String, String> {
+    match auth::avatar::get_cached_avatar(&state, uuid).await {
+        Ok(avatar) => Ok(avatar),
+        Err(e) => {
+            error!("Failed to get avatar: {}", e);
+            Err(e.to_string())
+        }
+    }
+}
