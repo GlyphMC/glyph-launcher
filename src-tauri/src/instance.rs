@@ -4,9 +4,10 @@ use anyhow::{Error, Result, anyhow};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use specta::Type;
-use tauri::{AppHandle, Emitter, State};
+use tauri::{AppHandle, State};
+use tauri_specta::Event;
 
-use crate::{AppState, Payload, config, resources::version};
+use crate::{AppState, config, resources::version};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct InstanceConfig {
@@ -56,6 +57,9 @@ pub struct Settings {
     #[specta(type = String)]
     pub last_played: Option<DateTime<Utc>>,
 }
+
+#[derive(Serialize, Deserialize, Debug, Clone, Type, Event)]
+pub struct InstanceListUpdatedEvent(String);
 
 impl InstanceConfig {
     fn get_instance_config_path() -> Result<PathBuf, Error> {
@@ -148,12 +152,7 @@ impl InstanceConfig {
         self.instances.push(instance);
         self.write_to_file()?;
 
-        handle.emit(
-            "instance-list-updated",
-            Payload {
-                message: "Instance added",
-            },
-        )?;
+        InstanceListUpdatedEvent("Instance added".into()).emit(handle)?;
 
         Ok(())
     }
@@ -164,12 +163,7 @@ impl InstanceConfig {
         }
         self.write_to_file()?;
 
-        handle.emit(
-            "instance-list-updated",
-            Payload {
-                message: "Instance updated",
-            },
-        )?;
+        InstanceListUpdatedEvent("Instance added".into()).emit(handle)?;
 
         Ok(())
     }
@@ -184,12 +178,7 @@ impl InstanceConfig {
             fs::remove_dir_all(instance_dir)?;
         }
 
-        handle.emit(
-            "instance-list-updated",
-            Payload {
-                message: "Instance deleted",
-            },
-        )?;
+        InstanceListUpdatedEvent("Instance deleted".into()).emit(handle)?;
 
         Ok(())
     }

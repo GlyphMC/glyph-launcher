@@ -4,7 +4,10 @@ use anyhow::{Error, Ok, Result, anyhow};
 use async_zip::tokio::read::seek::ZipFileReader;
 use futures::try_join;
 use log::info;
-use tauri::{AppHandle, Emitter};
+use serde::{Deserialize, Serialize};
+use specta::Type;
+use tauri::AppHandle;
+use tauri_specta::Event;
 use tokio::{
     fs::{self, File},
     io::{self, BufReader},
@@ -12,7 +15,19 @@ use tokio::{
 };
 use tokio_util::compat::FuturesAsyncReadCompatExt;
 
-use crate::{Payload, java::structs::Progress};
+#[derive(Serialize, Deserialize, Debug, Clone, Type, Event)]
+pub struct JavaExtractStartedEvent(String);
+
+#[derive(Serialize, Deserialize, Debug, Clone, Type, Event)]
+pub struct JavaExtractProgressEvent {
+    pub version: i8,
+    pub percentage: f64,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, Type, Event)]
+pub struct JavaExtractFinishedEvent {
+    pub paths: Vec<String>,
+}
 
 pub async fn extract_java(
     handle: AppHandle,
@@ -20,12 +35,7 @@ pub async fn extract_java(
 ) -> Result<(PathBuf, PathBuf, PathBuf), Error> {
     let (java_8_path, java_17_path, java_21_path) = paths;
 
-    handle.emit(
-        "java-extract-started",
-        Payload {
-            message: "Extract started",
-        },
-    )?;
+    JavaExtractStartedEvent("Extract started".to_string()).emit(&handle)?;
 
     let (output_dir_8, output_dir_17, output_dir_21) = try_join!(
         extract_java_archive(&handle, 8, &java_8_path),
@@ -33,12 +43,14 @@ pub async fn extract_java(
         extract_java_archive(&handle, 21, &java_21_path)
     )?;
 
-    handle.emit(
-        "java-extract-finished",
-        Payload {
-            message: "Extract finished",
-        },
-    )?;
+    JavaExtractFinishedEvent {
+        paths: vec![
+            output_dir_8.to_string_lossy().to_string(),
+            output_dir_17.to_string_lossy().to_string(),
+            output_dir_21.to_string_lossy().to_string(),
+        ],
+    }
+    .emit(&handle)?;
 
     Ok((output_dir_8, output_dir_17, output_dir_21))
 }
@@ -96,17 +108,21 @@ async fn extract_java_archive(
 
         if last_emit_time.elapsed().as_millis() >= 250 {
             let percentage = (extracted_size as f64 / total_size as f64) * 100.0;
-            let progress = Progress { percentage };
 
-            handle.emit(&format!("java-extract-progress-{}", version), progress)?;
+            JavaExtractProgressEvent {
+                version,
+                percentage,
+            }
+            .emit(handle)?;
             last_emit_time = Instant::now();
         }
     }
 
-    handle.emit(
-        &format!("java-extract-progress-{}", version),
-        Progress { percentage: 100.0 },
-    )?;
+    JavaExtractProgressEvent {
+        version,
+        percentage: 100.0,
+    }
+    .emit(handle)?;
 
     fs::remove_file(&archive_path).await?;
 

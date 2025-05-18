@@ -9,12 +9,12 @@
 	import InstanceAssetsDownloadPopUp from "$lib/components/core/InstanceAssetsDownloadPopUp.svelte";
 	import { formatDistanceToNow, parseISO } from "date-fns";
 	import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
-	import { listen, type UnlistenFn } from "@tauri-apps/api/event";
+	import { type UnlistenFn } from "@tauri-apps/api/event";
 	import type { Attachment } from "svelte/attachments";
 	import { page } from "$app/state";
 	import { scale } from "svelte/transition";
 	import { quintOut } from "svelte/easing";
-	import { commands, type Instance } from "$lib/bindings";
+	import { commands, events, type Instance } from "$lib/bindings";
 
 	let { data, children }: { data: LayoutData; children: Snippet } = $props();
 	let instance = $state<Instance>();
@@ -171,14 +171,14 @@
 			const instanceStoppedEvent = `${label}-instance-stopped`;
 
 			unlistenFns.push(
-				await listen(instanceStartedEvent, () => {
+				await events.instanceStartedEvent.listen((event) => {
 					console.log("Instance started event received");
 					isRunning = true;
 				})
 			);
 
 			unlistenFns.push(
-				await listen(instanceStoppedEvent, () => {
+				await events.instanceStoppedEvent.listen((event) => {
 					console.log("Instance stopped event received");
 					isRunning = false;
 				})

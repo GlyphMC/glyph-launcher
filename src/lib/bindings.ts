@@ -199,18 +199,65 @@ export const commands = {
 
 /** user-defined events **/
 
+export const events = __makeEvents__<{
+	assetProgressEvent: AssetProgressEvent;
+	assetsDownloadFinishedEvent: AssetsDownloadFinishedEvent;
+	assetsDownloadStartedEvent: AssetsDownloadStartedEvent;
+	instanceListUpdatedEvent: InstanceListUpdatedEvent;
+	instanceLogEvent: InstanceLogEvent;
+	instanceStartedEvent: InstanceStartedEvent;
+	instanceStoppedEvent: InstanceStoppedEvent;
+	javaDownloadFinishedEvent: JavaDownloadFinishedEvent;
+	javaDownloadProgressEvent: JavaDownloadProgressEvent;
+	javaDownloadStartedEvent: JavaDownloadStartedEvent;
+	javaExtractFinishedEvent: JavaExtractFinishedEvent;
+	javaExtractProgressEvent: JavaExtractProgressEvent;
+	javaExtractStartedEvent: JavaExtractStartedEvent;
+	loginDetailsEvent: LoginDetailsEvent;
+}>({
+	assetProgressEvent: "asset-progress-event",
+	assetsDownloadFinishedEvent: "assets-download-finished-event",
+	assetsDownloadStartedEvent: "assets-download-started-event",
+	instanceListUpdatedEvent: "instance-list-updated-event",
+	instanceLogEvent: "instance-log-event",
+	instanceStartedEvent: "instance-started-event",
+	instanceStoppedEvent: "instance-stopped-event",
+	javaDownloadFinishedEvent: "java-download-finished-event",
+	javaDownloadProgressEvent: "java-download-progress-event",
+	javaDownloadStartedEvent: "java-download-started-event",
+	javaExtractFinishedEvent: "java-extract-finished-event",
+	javaExtractProgressEvent: "java-extract-progress-event",
+	javaExtractStartedEvent: "java-extract-started-event",
+	loginDetailsEvent: "login-details-event"
+});
+
 /** user-defined constants **/
 
 /** user-defined types **/
 
 export type Account = { active: boolean; expiry: string; accessToken: string; refreshToken: string; profile: Profile };
+export type AssetKind = "Assets" | "Libraries" | "version-jar";
+export type AssetProgressEvent = { kind: AssetKind; percentage: number };
+export type AssetsDownloadFinishedEvent = string;
+export type AssetsDownloadStartedEvent = string;
 export type Cape = { id: string; state: string; url: string; alias: string };
 export type Game = { version: string; modloader: Modloader; url: string };
 export type Instance = { slug: string; name: string; game: Game; java: Java; settings: Settings };
+export type InstanceListUpdatedEvent = string;
+export type InstanceLogEvent = { slug: string; line: string };
+export type InstanceStartedEvent = { slug: string; message: string };
+export type InstanceStoppedEvent = { slug: string; message: string };
 export type Java = { path: string; args: string[]; version: number };
 export type JavaConfig = { java8Path: string; java17Path: string; java21Path: string };
+export type JavaDownloadFinishedEvent = { paths: string[] };
+export type JavaDownloadProgressEvent = { version: number; percentage: number };
+export type JavaDownloadStartedEvent = string;
+export type JavaExtractFinishedEvent = { paths: string[] };
+export type JavaExtractProgressEvent = { version: number; percentage: number };
+export type JavaExtractStartedEvent = string;
 export type JavaTestInfo = { valid: boolean; version: number; vendor: string; expectedVersion: number; versionMismatch: boolean };
 export type LauncherSettings = { richPresence: boolean; useDiscreteGpu: boolean };
+export type LoginDetailsEvent = { code: string; uri: string };
 export type Modloader = { loader: string; version: string | null };
 export type Profile = { id: string; name: string; skins: Skin[]; capes: Cape[] };
 export type Settings = {

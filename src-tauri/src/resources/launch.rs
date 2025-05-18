@@ -11,12 +11,15 @@ use chrono::Utc;
 use discord_rich_presence::DiscordIpcClient;
 use futures::try_join;
 use log::{error, info};
-use tauri::{AppHandle, Emitter, State};
+use serde::{Deserialize, Serialize};
+use specta::Type;
+use tauri::{AppHandle, State};
+use tauri_specta::Event;
 use tokio::{sync::Mutex, time::Instant};
 use walkdir::WalkDir;
 
 use crate::{
-    AppState, Payload, config, discord,
+    AppState, config, discord,
     instance::Instance,
     resources::{
         assets::AssetManager,
@@ -27,6 +30,30 @@ use crate::{
 #[cfg(target_os = "windows")]
 use crate::resources::gpu_prefs::{self, GpuPreference};
 
+#[derive(Serialize, Deserialize, Debug, Clone, Type, Event)]
+pub struct AssetsDownloadStartedEvent(String);
+
+#[derive(Serialize, Deserialize, Debug, Clone, Type, Event)]
+pub struct AssetsDownloadFinishedEvent(String);
+
+#[derive(Serialize, Deserialize, Debug, Clone, Type, Event)]
+pub struct InstanceStartedEvent<'a> {
+    pub slug: &'a str,
+    pub message: &'a str,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, Type, Event)]
+pub struct InstanceStoppedEvent<'a> {
+    pub slug: &'a str,
+    pub message: &'a str,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, Type, Event)]
+pub struct InstanceLogEvent<'a> {
+    pub slug: &'a str,
+    pub line: &'a str,
+}
+
 async fn download_instance_assets(
     state: &State<'_, AppState>,
     handle: &AppHandle,
@@ -34,12 +61,7 @@ async fn download_instance_assets(
     version_manifest: &VersionManifest,
     config_dir: &Path,
 ) -> Result<()> {
-    handle.emit(
-        "instance-download-assets-started",
-        Payload {
-            message: "Download started",
-        },
-    )?;
+    AssetsDownloadStartedEvent("Download started".into()).emit(handle)?;
 
     info!("Downloading assets for instance: {}", slug);
     let client = state.client.lock().await.clone();
@@ -83,12 +105,7 @@ async fn download_instance_assets(
         slug
     );
 
-    handle.emit(
-        "instance-download-assets-finished",
-        Payload {
-            message: "Download finished",
-        },
-    )?;
+    AssetsDownloadFinishedEvent("Download finished".into()).emit(handle)?;
 
     let mut instances_config = state.instances.lock().await;
     let mut instance_to_update = instances_config
@@ -278,24 +295,17 @@ async fn launch_game(
     }
 
     let formatted_slug = instance.slug.replace(".", "_");
-    let slug_arc = Arc::new(formatted_slug);
 
     let mut child = command
         .stdout(Stdio::piped())
         .spawn()
         .map_err(|e| Error::msg(format!("Failed to launch game: {}", e)))?;
 
-    if let Err(e) = handle.emit(
-        &format!("{}-instance-started", slug_arc),
-        Payload {
-            message: "Game instance started",
-        },
-    ) {
-        error!(
-            "Failed to emit game instance started event for {}: {}",
-            instance.slug, e
-        );
+    InstanceStartedEvent {
+        slug: &formatted_slug,
+        message: "Game instance started",
     }
+    .emit(handle)?;
 
     let stdout = child
         .stdout
@@ -303,13 +313,20 @@ async fn launch_game(
         .ok_or_else(|| anyhow!("Failed to capture stdout from game process"))?;
 
     let stdout_handle = handle.clone();
-    let slug = Arc::clone(&slug_arc);
+    let log_slug = formatted_slug.clone();
     thread::spawn(move || {
         let reader = BufReader::new(stdout);
         for line in reader.lines().map_while(Result::ok) {
-            if let Err(e) = stdout_handle.emit(&format!("{}-log", slug), Payload { message: &line })
-            {
-                error!("Failed to send stdout event: {}", e);
+            let line = line.trim().to_string();
+            if !line.is_empty() {
+                if let Err(e) = (InstanceLogEvent {
+                    slug: &log_slug,
+                    line: &line,
+                })
+                .emit(&stdout_handle)
+                {
+                    error!("Failed to emit instance log event for {}: {}", log_slug, e);
+                }
             }
         }
     });
@@ -318,17 +335,11 @@ async fn launch_game(
         .wait()
         .map_err(|e| Error::msg(format!("Failed to wait for game process: {}", e)))?;
 
-    if let Err(e) = handle.emit(
-        &format!("{}-instance-stopped", slug_arc),
-        Payload {
-            message: "Game instance stopped",
-        },
-    ) {
-        error!(
-            "Failed to emit game instance stopped event for {}: {}",
-            instance.slug, e
-        );
+    InstanceStoppedEvent {
+        slug: &formatted_slug,
+        message: "Game instance stopped",
     }
+    .emit(handle)?;
 
     #[cfg(target_os = "windows")]
     {

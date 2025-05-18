@@ -12,7 +12,9 @@ use log::info;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use tauri::{AppHandle, Emitter, State};
+use specta::Type;
+use tauri::{AppHandle, State};
+use tauri_specta::Event;
 use tokio::time::sleep;
 
 use crate::{AppState, auth::account::Profile, config};
@@ -26,12 +28,6 @@ use super::{
 };
 
 const CLIENT_ID: &str = "04bc8538-fc3c-4490-9e61-a2b3f4cbcf5c";
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-struct LoginDetails<'a> {
-    code: &'a str,
-    uri: &'a str,
-}
 
 #[derive(Clone)]
 pub struct LoginHandle {
@@ -50,6 +46,12 @@ impl LoginHandle {
     }
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone, Type, Event)]
+pub struct LoginDetailsEvent<'a> {
+    pub code: &'a str,
+    pub uri: &'a str,
+}
+
 pub async fn login(
     state: &State<'_, AppState>,
     handle: AppHandle,
@@ -59,12 +61,12 @@ pub async fn login(
 
     let device_code_response = device_response(&client).await?;
     let device_response = device_code_response;
-    let login_details = LoginDetails {
+
+    LoginDetailsEvent {
         code: &device_response.user_code,
         uri: &device_response.verification_uri,
-    };
-
-    handle.emit("login-details", login_details)?;
+    }
+    .emit(&handle)?;
 
     let mut authentication_response: Option<AuthorizationTokenResponse> = None;
     while authentication_response.is_none() {

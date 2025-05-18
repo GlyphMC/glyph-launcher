@@ -8,7 +8,9 @@ use anyhow::{Error, Result, anyhow};
 use log::info;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
-use tauri::{AppHandle, Emitter};
+use specta::Type;
+use tauri::AppHandle;
+use tauri_specta::Event;
 use tokio::{
     fs::{File, create_dir_all},
     io::AsyncWriteExt,
@@ -16,8 +18,17 @@ use tokio::{
 
 use super::version::VersionManifest;
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct Progress {
+#[derive(Clone, Debug, Serialize, Deserialize, Type, Event)]
+pub enum AssetKind {
+    Assets,
+    Libraries,
+    #[serde(rename = "version-jar")]
+    VersionJar,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, Type, Event)]
+pub struct AssetProgressEvent {
+    pub kind: AssetKind,
     pub percentage: f64,
 }
 
@@ -110,16 +121,21 @@ impl<'a> AssetManager<'a> {
             downloaded_assets += 1;
             if last_emit_time.elapsed().as_millis() >= 250 {
                 let percentage = (downloaded_assets as f64 / total_assets as f64) * 100.0;
-                self.handle
-                    .emit("instance-download-assets-progress", Progress { percentage })?;
+
+                AssetProgressEvent {
+                    kind: AssetKind::Assets,
+                    percentage,
+                }
+                .emit(self.handle)?;
                 last_emit_time = Instant::now();
             }
         }
 
-        self.handle.emit(
-            "instance-download-assets-progress",
-            Progress { percentage: 100.0 },
-        )?;
+        AssetProgressEvent {
+            kind: AssetKind::Assets,
+            percentage: 100.0,
+        }
+        .emit(self.handle)?;
 
         Ok(())
     }
@@ -135,7 +151,6 @@ impl<'a> AssetManager<'a> {
         let mut last_emit_time = Instant::now();
 
         for library in &version_manifest.libraries {
-            // info!("Downloading library: {}", library.name);
             let artifact = &library.downloads.artifact;
             let library_path = self.libraries_dir.join(&artifact.path);
 
@@ -152,18 +167,21 @@ impl<'a> AssetManager<'a> {
             downloaded_libraries += 1;
             if last_emit_time.elapsed().as_millis() >= 250 {
                 let percentage = (downloaded_libraries as f64 / total_libraries as f64) * 100.0;
-                self.handle.emit(
-                    "instance-download-libraries-progress",
-                    Progress { percentage },
-                )?;
+
+                AssetProgressEvent {
+                    kind: AssetKind::Libraries,
+                    percentage,
+                }
+                .emit(self.handle)?;
                 last_emit_time = Instant::now();
             }
         }
 
-        self.handle.emit(
-            "instance-download-libraries-progress",
-            Progress { percentage: 100.0 },
-        )?;
+        AssetProgressEvent {
+            kind: AssetKind::Libraries,
+            percentage: 100.0,
+        }
+        .emit(self.handle)?;
 
         Ok(())
     }
@@ -204,28 +222,32 @@ impl<'a> AssetManager<'a> {
 
                 if last_emit_time.elapsed().as_millis() >= 250 {
                     let percentage = (downloaded_size as f64 / total_size as f64) * 100.0;
-                    self.handle.emit(
-                        "instance-download-version-jar-progress",
-                        Progress { percentage },
-                    )?;
+
+                    AssetProgressEvent {
+                        kind: AssetKind::VersionJar,
+                        percentage,
+                    }
+                    .emit(self.handle)?;
                     last_emit_time = Instant::now();
                 }
             }
 
-            self.handle.emit(
-                "instance-download-version-jar-progress",
-                Progress { percentage: 100.0 },
-            )?;
+            AssetProgressEvent {
+                kind: AssetKind::VersionJar,
+                percentage: 100.0,
+            }
+            .emit(self.handle)?;
         } else {
             info!(
                 "Minecraft version JAR already downloaded: {}",
                 version_manifest.id
             );
 
-            self.handle.emit(
-                "instance-download-version-jar-progress",
-                Progress { percentage: 100.0 },
-            )?;
+            AssetProgressEvent {
+                kind: AssetKind::VersionJar,
+                percentage: 100.0,
+            }
+            .emit(self.handle)?;
         }
 
         Ok(())

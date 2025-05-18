@@ -5,31 +5,34 @@ use futures::try_join;
 use log::{debug, info};
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
-use tauri::{AppHandle, Emitter, State};
+use specta::Type;
+use tauri::{AppHandle, State};
+use tauri_specta::Event;
 use tokio::{fs::File, io::AsyncWriteExt, time::Instant};
 
-use crate::{
-    AppState, Payload, config,
-    java::structs::{JavaInfo, Progress},
-};
+use crate::{AppState, config, java::structs::JavaInfo};
 
 const BASE_URL: &str = "https://api.azul.com/metadata/v1/zulu/packages/";
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
-struct DownloadPaths {
-    paths: Vec<String>,
+#[derive(Serialize, Deserialize, Debug, Clone, Type, Event)]
+pub struct JavaDownloadStartedEvent(String);
+
+#[derive(Serialize, Deserialize, Debug, Clone, Type, Event)]
+pub struct JavaDownloadProgressEvent {
+    pub version: i8,
+    pub percentage: f64,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, Type, Event)]
+pub struct JavaDownloadFinishedEvent {
+    pub paths: Vec<String>,
 }
 
 pub async fn download_java(
     state: &State<'_, AppState>,
     handle: AppHandle,
 ) -> Result<(PathBuf, PathBuf, PathBuf), Error> {
-    handle.emit(
-        "java-download-started",
-        Payload {
-            message: "Download started",
-        },
-    )?;
+    JavaDownloadStartedEvent("Download started".into()).emit(&handle)?;
 
     let client = state.client.lock().await;
     let config_dir = config::get_config_dir()?;
@@ -47,16 +50,14 @@ pub async fn download_java(
         download_java_version(21, &client, &handle)
     )?;
 
-    handle.emit(
-        "java-download-finished",
-        DownloadPaths {
-            paths: vec![
-                java_8_archive_path.to_string_lossy().to_string(),
-                java_17_archive_path.to_string_lossy().to_string(),
-                java_21_archive_path.to_string_lossy().to_string(),
-            ],
-        },
-    )?;
+    JavaDownloadFinishedEvent {
+        paths: vec![
+            java_8_archive_path.to_string_lossy().to_string(),
+            java_17_archive_path.to_string_lossy().to_string(),
+            java_21_archive_path.to_string_lossy().to_string(),
+        ],
+    }
+    .emit(&handle)?;
 
     Ok((
         java_8_archive_path,
@@ -133,9 +134,12 @@ async fn download_java_version(
 
                     if last_emit_time.elapsed().as_millis() >= 250 {
                         let percentage = (downloaded_size as f64 / total_size as f64) * 100.0;
-                        let progress = Progress { percentage };
 
-                        handle.emit(&format!("java-download-progress-{}", version), progress)?;
+                        JavaDownloadProgressEvent {
+                            version,
+                            percentage,
+                        }
+                        .emit(handle)?;
                         last_emit_time = Instant::now();
                     }
 
@@ -144,10 +148,11 @@ async fn download_java_version(
                     }
                 }
 
-                handle.emit(
-                    &format!("java-download-progress-{}", version),
-                    Progress { percentage: 100.0 },
-                )?;
+                JavaDownloadProgressEvent {
+                    version,
+                    percentage: 100.0,
+                }
+                .emit(handle)?;
 
                 info!(
                     "Downloaded Java {} to: {}",

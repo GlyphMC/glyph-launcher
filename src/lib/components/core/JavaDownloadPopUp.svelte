@@ -2,20 +2,13 @@
 	import * as Card from "$lib/components/ui/card";
 	import { Button } from "$lib/components/ui/button";
 	import { ProgressBar } from "./ProgressBar.svelte";
-	import {
-		saveJavaToConfig,
-		type DownloadPaths,
-		type JavaDownloadState,
-		type JavaExtractState,
-		type JavaProgress,
-		type ProgressEvent
-	} from "$lib/utils/JavaUtils";
+	import { saveJavaToConfig, type JavaDownloadState, type JavaExtractState, type JavaProgress } from "$lib/utils/JavaUtils";
 	import { onMount } from "svelte";
-	import { listen, type UnlistenFn } from "@tauri-apps/api/event";
+	import { type UnlistenFn } from "@tauri-apps/api/event";
 	import type { Attachment } from "svelte/attachments";
 	import { scale } from "svelte/transition";
 	import { quintOut } from "svelte/easing";
-	import { commands } from "$lib/bindings";
+	import { commands, events } from "$lib/bindings";
 
 	let downloadState = $state<JavaDownloadState>("none");
 	let extractState = $state<JavaExtractState>("none");
@@ -35,48 +28,50 @@
 		let unlistenFns: UnlistenFn[] = [];
 
 		const setupEventListeners = async () => {
+			unlistenFns.push(await events.javaDownloadStartedEvent.listen((event) => (downloadState = "downloading")));
 			unlistenFns.push(
-				await listen("java-download-started", () => {
-					downloadState = "downloading";
-					console.log("Java download started");
+				await events.javaDownloadProgressEvent.listen((event) => {
+					const { version, percentage } = event.payload;
+
+					const updatedVersionMap = {
+						...javaProgress.download,
+						[version]: percentage
+					};
+					javaProgress.download = updatedVersionMap;
 				})
 			);
 			unlistenFns.push(
-				await listen<DownloadPaths>("java-download-finished", async (event) => {
+				await events.javaDownloadFinishedEvent.listen(async (event) => {
 					downloadState = "done";
 					paths = event.payload.paths;
 					await startExtraction();
 				})
 			);
 
-			unlistenFns.push(await listen("java-extract-started", () => (extractState = "extracting")));
+			unlistenFns.push(await events.javaExtractStartedEvent.listen((event) => (extractState = "extracting")));
 			unlistenFns.push(
-				await listen("java-extract-finished", async () => {
-					extractState = "done";
-					await saveJavaToConfig(paths, true);
+				await events.javaExtractProgressEvent.listen((event) => {
+					const { version, percentage } = event.payload;
+
+					const updatedVersionMap = {
+						...javaProgress.extract,
+						[version]: percentage
+					};
+					javaProgress.extract = updatedVersionMap;
 				})
 			);
-
-			[8, 17, 21].forEach((version) => {
-				setProgressListener("java-download", "download", version);
-				setProgressListener("java-extract", "extract", version);
-			});
+			unlistenFns.push(
+				await events.javaExtractFinishedEvent.listen(async (event) => {
+					extractState = "done";
+					await saveJavaToConfig(event.payload.paths, true);
+				})
+			);
 		};
 
 		setupEventListeners();
 
 		return () => unlistenFns.forEach((unlisten) => unlisten());
 	};
-
-	function setProgressListener(name: string, stateKey: keyof typeof javaProgress, version: number) {
-		listen<ProgressEvent>(`${name}-progress-${version}`, (event) => {
-			const updatedVersionMap = {
-				...javaProgress[stateKey],
-				[version]: event.payload.percentage
-			};
-			javaProgress[stateKey] = updatedVersionMap;
-		});
-	}
 
 	function getStatusText(download: JavaDownloadState, extract: JavaExtractState): string {
 		if (download === "downloading") {

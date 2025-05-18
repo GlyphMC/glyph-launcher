@@ -1,8 +1,8 @@
 import { goto } from "$app/navigation";
 import { fetchMinecraftProfiles } from "$lib/utils/AccountUtils";
 import { authService } from "$lib/services/AuthService.svelte";
-import { listen, type UnlistenFn } from "@tauri-apps/api/event";
-import { commands, type Instance, type Profile } from "$lib/bindings";
+import { type UnlistenFn } from "@tauri-apps/api/event";
+import { commands, events, type Instance, type Profile } from "$lib/bindings";
 
 export class SidebarController {
 	instances = $state<Instance[]>([]);
@@ -67,9 +67,7 @@ export class SidebarController {
 	}
 
 	private async setupListeners() {
-		this.unlistenInstanceListUpdated = await listen("instance-list-updated", () => {
-			this.fetchInstances();
-		});
+		this.unlistenInstanceListUpdated = await events.instanceListUpdatedEvent.listen(() => this.fetchInstances());
 	}
 
 	async logout() {

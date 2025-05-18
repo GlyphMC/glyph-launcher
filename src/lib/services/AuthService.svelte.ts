@@ -1,6 +1,5 @@
-import { listen, type UnlistenFn } from "@tauri-apps/api/event";
-import type { LoginDetailsEvent } from "$lib/types";
-import { commands, type Profile } from "$lib/bindings";
+import { type UnlistenFn } from "@tauri-apps/api/event";
+import { commands, events, type Profile } from "$lib/bindings";
 
 class AuthService {
 	loginCode = $state("");
@@ -16,11 +15,14 @@ class AuthService {
 		if (this.isInitialized) return;
 		this.isInitialized = true;
 
-		this.unlistenLoginDetails = await listen<LoginDetailsEvent>("login-details", (event) => {
-			this.loginCode = event.payload.code;
-			this.verificationUri = event.payload.uri;
+		this.unlistenLoginDetails = await events.loginDetailsEvent.listen((event) => {
+			const { code, uri } = event.payload;
+
+			this.loginCode = code;
+			this.verificationUri = uri;
 			this.showLoginPopUp = true;
 		});
+
 		console.log("AuthService initialized and listener set up.");
 	}
 

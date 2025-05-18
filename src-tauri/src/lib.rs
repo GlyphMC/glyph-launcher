@@ -5,10 +5,9 @@ use discord_rich_presence::DiscordIpcClient;
 use instance::InstanceConfig;
 use log::{error, info};
 use reqwest::Client;
-use serde::{Deserialize, Serialize};
 use specta_typescript::{BigIntExportBehavior, Typescript};
 use tauri::{Manager, WindowEvent, Wry};
-use tauri_specta::{Builder, collect_commands};
+use tauri_specta::{Builder, collect_commands, collect_events};
 use tokio::sync::Mutex;
 
 mod auth;
@@ -19,48 +18,63 @@ mod instance;
 mod java;
 mod resources;
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct Payload<'a> {
-    message: &'a str,
-}
+pub type ProcessHandle = Arc<Mutex<Option<process::Child>>>;
+pub type RunningInstancesMap = HashMap<String, ProcessHandle>;
 
 pub struct AppState {
     client: Arc<Mutex<Client>>,
     instances: Arc<Mutex<InstanceConfig>>,
     login_handle: LoginHandle,
     discord_client: Arc<Mutex<Option<DiscordIpcClient>>>,
-    running_instances: Arc<Mutex<HashMap<String, Arc<Mutex<Option<process::Child>>>>>>,
+    running_instances: Arc<Mutex<RunningInstancesMap>>,
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    let builder = Builder::<Wry>::new().commands(collect_commands![
-        commands::login,
-        commands::cancel_login,
-        commands::set_onboarding_complete,
-        commands::switch_account,
-        commands::delete_account,
-        commands::get_active_account,
-        commands::get_minecraft_profiles,
-        commands::download_java,
-        commands::extract_java,
-        commands::test_java,
-        commands::save_java_to_config,
-        commands::get_java_from_config,
-        commands::get_instances,
-        commands::get_instance,
-        commands::create_instance,
-        commands::update_instance,
-        commands::delete_instance,
-        commands::launch_instance,
-        // commands::kill_instance,
-        commands::get_versions,
-        commands::set_discord_activity,
-        commands::toggle_discord_rpc,
-        commands::get_launcher_settings,
-        commands::save_launcher_settings,
-        commands::get_avatar,
-    ]);
+    let builder = Builder::<Wry>::new()
+        .commands(collect_commands![
+            commands::login,
+            commands::cancel_login,
+            commands::set_onboarding_complete,
+            commands::switch_account,
+            commands::delete_account,
+            commands::get_active_account,
+            commands::get_minecraft_profiles,
+            commands::download_java,
+            commands::extract_java,
+            commands::test_java,
+            commands::save_java_to_config,
+            commands::get_java_from_config,
+            commands::get_instances,
+            commands::get_instance,
+            commands::create_instance,
+            commands::update_instance,
+            commands::delete_instance,
+            commands::launch_instance,
+            // commands::kill_instance,
+            commands::get_versions,
+            commands::set_discord_activity,
+            commands::toggle_discord_rpc,
+            commands::get_launcher_settings,
+            commands::save_launcher_settings,
+            commands::get_avatar,
+        ])
+        .events(collect_events![
+            auth::auth::LoginDetailsEvent,
+            instance::InstanceListUpdatedEvent,
+            java::download::JavaDownloadStartedEvent,
+            java::download::JavaDownloadProgressEvent,
+            java::download::JavaDownloadFinishedEvent,
+            java::extract::JavaExtractStartedEvent,
+            java::extract::JavaExtractProgressEvent,
+            java::extract::JavaExtractFinishedEvent,
+            resources::assets::AssetProgressEvent,
+            resources::launch::AssetsDownloadStartedEvent,
+            resources::launch::AssetsDownloadFinishedEvent,
+            resources::launch::InstanceStartedEvent,
+            resources::launch::InstanceStoppedEvent,
+            resources::launch::InstanceLogEvent,
+        ]);
 
     #[cfg(debug_assertions)]
     builder

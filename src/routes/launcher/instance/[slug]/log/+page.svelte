@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 	import { page } from "$app/state";
-	import type { Payload } from "$lib/types";
 	import type { Attachment } from "svelte/attachments";
+	import { events } from "$lib/bindings";
 
 	let logMessages = $state<string[]>([]);
 	let wrapLines = $state(true);
@@ -22,21 +22,14 @@
 		let unlistenFn: UnlistenFn | null = null;
 
 		const setupListener = async () => {
-			try {
-				unlistenFn = await listen<Payload>(eventName, (event) => {
-					if (event.payload.message) {
-						logMessages.push(event.payload.message);
+			unlistenFn = await events.instanceLogEvent.listen((event) => {
+				const { line } = event.payload;
+				logMessages.push(line);
 
-						setTimeout(() => {
-							element.scrollTop = element.scrollHeight;
-						}, 0);
-					} else {
-						console.warn("Received log event with unexpected payload:", event.payload);
-					}
-				});
-			} catch (error) {
-				console.error(`Failed to attach listener for event "${eventName}":`, error);
-			}
+				setTimeout(() => {
+					element.scrollTop = element.scrollHeight;
+				}, 0);
+			});
 		};
 
 		setupListener();
