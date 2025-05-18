@@ -1,6 +1,9 @@
 <script lang="ts">
 	import { onDestroy, onMount, type Snippet } from "svelte";
 	import { onboardingController } from "$lib/controllers/OnboardingController.svelte";
+	import { page } from "$app/state";
+	import { scale } from "svelte/transition";
+	import { quintOut } from "svelte/easing";
 
 	let { children }: { children: Snippet } = $props();
 
@@ -8,4 +11,8 @@
 	onDestroy(() => onboardingController.cleanup());
 </script>
 
-{@render children()}
+{#key page.url.hash}
+	<div class="h-full w-full" in:scale={{ start: 0.95, duration: 250, easing: quintOut }}>
+		{@render children()}
+	</div>
+{/key}

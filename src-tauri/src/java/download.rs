@@ -25,7 +25,7 @@ pub async fn download_java(
     handle: AppHandle,
 ) -> Result<(PathBuf, PathBuf, PathBuf), Error> {
     handle.emit(
-        "download-started",
+        "java-download-started",
         Payload {
             message: "Download started",
         },
@@ -48,7 +48,7 @@ pub async fn download_java(
     )?;
 
     handle.emit(
-        "download-finished",
+        "java-download-finished",
         DownloadPaths {
             paths: vec![
                 java_8_archive_path.to_string_lossy().to_string(),

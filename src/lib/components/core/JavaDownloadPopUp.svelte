@@ -8,6 +8,8 @@
 	import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 	import { invoke } from "@tauri-apps/api/core";
 	import type { Attachment } from "svelte/attachments";
+	import { scale } from "svelte/transition";
+	import { quintOut } from "svelte/easing";
 
 	let downloadState = $state<JavaDownloadState>("none");
 	let extractState = $state<JavaExtractState>("none");
@@ -27,7 +29,12 @@
 		let unlistenFns: UnlistenFn[] = [];
 
 		const setupEventListeners = async () => {
-			unlistenFns.push(await listen("java-download-started", () => (downloadState = "downloading")));
+			unlistenFns.push(
+				await listen("java-download-started", () => {
+					downloadState = "downloading";
+					console.log("Java download started");
+				})
+			);
 			unlistenFns.push(
 				await listen<DownloadPaths>("java-download-finished", async (event) => {
 					downloadState = "done";
@@ -57,7 +64,11 @@
 
 	function setProgressListener(name: string, stateKey: keyof typeof javaProgress, version: number) {
 		listen<ProgressEvent>(`${name}-progress-${version}`, (event) => {
-			javaProgress[stateKey][version] = event.payload.percentage;
+			const updatedVersionMap = {
+				...javaProgress[stateKey],
+				[version]: event.payload.percentage
+			};
+			javaProgress[stateKey] = updatedVersionMap;
 		});
 	}
 
@@ -102,7 +113,11 @@
 	let { onComplete }: Props = $props();
 </script>
 
-<div class="fixed inset-0 z-50 flex items-center justify-center bg-zinc-900 bg-opacity-50 font-display backdrop-blur-md">
+<div
+	class="fixed inset-0 z-50 flex items-center justify-center bg-zinc-900 bg-opacity-50 font-display backdrop-blur-md"
+	in:scale={{ duration: 300, start: 0.5, opacity: 0, easing: quintOut }}
+	out:scale={{ duration: 200, opacity: 0, easing: quintOut }}
+	{@attach javaSetup}>
 	<Card.Root class="relative w-full max-w-sm rounded-lg bg-zinc-900 p-2 text-center shadow-lg">
 		<Card.Header>
 			<h2 class="text-xl font-bold text-zinc-50">Java Automatic Setup</h2>
@@ -110,7 +125,7 @@
 		</Card.Header>
 
 		<Card.Content>
-			<div {@attach javaSetup} class="flex flex-col space-y-2">
+			<div class="flex flex-col space-y-2">
 				{@render ProgressBar(currentProgress[8], "Java 8")}
 				{@render ProgressBar(currentProgress[17], "Java 17")}
 				{@render ProgressBar(currentProgress[21], "Java 21")}
