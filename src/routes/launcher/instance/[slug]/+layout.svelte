@@ -14,6 +14,8 @@
 	import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 	import type { Attachment } from "svelte/attachments";
 	import { page } from "$app/state";
+	import { scale } from "svelte/transition";
+	import { quintOut } from "svelte/easing";
 
 	let { data, children }: { data: LayoutData; children: Snippet } = $props();
 	let instance = $state<Instance>();
@@ -238,9 +240,11 @@
 		{/if}
 	</div>
 
-	<div class="px-10 pt-5">
-		{@render children()}
-	</div>
+	{#key page.url.hash}
+		<div class="px-10 pt-5" in:scale={{ start: 0.95, duration: 250, easing: quintOut }}>
+			{@render children()}
+		</div>
+	{/key}
 </div>
 
 <style>

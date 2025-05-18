@@ -21,7 +21,7 @@ pub async fn extract_java(
     let (java_8_path, java_17_path, java_21_path) = paths;
 
     handle.emit(
-        "extract-started",
+        "java-extract-started",
         Payload {
             message: "Extract started",
         },
@@ -34,7 +34,7 @@ pub async fn extract_java(
     )?;
 
     handle.emit(
-        "extract-finished",
+        "java-extract-finished",
         Payload {
             message: "Extract finished",
         },
