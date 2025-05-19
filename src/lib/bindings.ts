@@ -194,6 +194,30 @@ export const commands = {
 			if (e instanceof Error) throw e;
 			else return { status: "error", error: e as any };
 		}
+	},
+	async getScreenshots(slug: string): Promise<Result<Screenshot[], string>> {
+		try {
+			return { status: "ok", data: await TAURI_INVOKE("get_screenshots", { slug }) };
+		} catch (e) {
+			if (e instanceof Error) throw e;
+			else return { status: "error", error: e as any };
+		}
+	},
+	async watchScreenshotsForInstance(slug: string): Promise<Result<null, string>> {
+		try {
+			return { status: "ok", data: await TAURI_INVOKE("watch_screenshots_for_instance", { slug }) };
+		} catch (e) {
+			if (e instanceof Error) throw e;
+			else return { status: "error", error: e as any };
+		}
+	},
+	async stopWatchingScreenshots(): Promise<Result<null, string>> {
+		try {
+			return { status: "ok", data: await TAURI_INVOKE("stop_watching_screenshots") };
+		} catch (e) {
+			if (e instanceof Error) throw e;
+			else return { status: "error", error: e as any };
+		}
 	}
 };
 
@@ -214,6 +238,7 @@ export const events = __makeEvents__<{
 	javaExtractProgressEvent: JavaExtractProgressEvent;
 	javaExtractStartedEvent: JavaExtractStartedEvent;
 	loginDetailsEvent: LoginDetailsEvent;
+	screenshotEvent: ScreenshotEvent;
 }>({
 	assetProgressEvent: "asset-progress-event",
 	assetsDownloadFinishedEvent: "assets-download-finished-event",
@@ -228,7 +253,8 @@ export const events = __makeEvents__<{
 	javaExtractFinishedEvent: "java-extract-finished-event",
 	javaExtractProgressEvent: "java-extract-progress-event",
 	javaExtractStartedEvent: "java-extract-started-event",
-	loginDetailsEvent: "login-details-event"
+	loginDetailsEvent: "login-details-event",
+	screenshotEvent: "screenshot-event"
 });
 
 /** user-defined constants **/
@@ -260,6 +286,8 @@ export type LauncherSettings = { richPresence: boolean; useDiscreteGpu: boolean 
 export type LoginDetailsEvent = { code: string; uri: string };
 export type Modloader = { loader: string; version: string | null };
 export type Profile = { id: string; name: string; skins: Skin[]; capes: Cape[] };
+export type Screenshot = { path: string; name: string; data: string };
+export type ScreenshotEvent = string;
 export type Settings = {
 	hasLaunched: boolean;
 	richPresence: boolean;

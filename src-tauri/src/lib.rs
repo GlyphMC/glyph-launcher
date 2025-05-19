@@ -58,6 +58,9 @@ pub fn run() {
             commands::get_launcher_settings,
             commands::save_launcher_settings,
             commands::get_avatar,
+            commands::get_screenshots,
+            commands::watch_screenshots_for_instance,
+            commands::stop_watching_screenshots
         ])
         .events(collect_events![
             auth::auth::LoginDetailsEvent,
@@ -74,6 +77,7 @@ pub fn run() {
             resources::launch::InstanceStartedEvent,
             resources::launch::InstanceStoppedEvent,
             resources::launch::InstanceLogEvent,
+            resources::screenshots::ScreenshotEvent,
         ]);
 
     #[cfg(debug_assertions)]

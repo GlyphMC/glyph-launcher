@@ -14,7 +14,7 @@ use crate::{
     discord,
     instance::Instance,
     java::{self, structs::JavaConfig, test::JavaTestInfo},
-    resources::{self, versions::Version},
+    resources::{self, screenshots::Screenshot, versions::Version},
 };
 
 #[tauri::command]
@@ -286,4 +286,38 @@ pub async fn get_avatar(state: State<'_, AppState>, uuid: String) -> Result<Stri
             Err(e.to_string())
         }
     }
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn get_screenshots(slug: String) -> Result<Vec<Screenshot>, String> {
+    match resources::screenshots::get_screenshots(slug) {
+        Ok(screenshots) => Ok(screenshots),
+        Err(e) => {
+            error!("Failed to get screenshots: {}", e);
+            Err(e.to_string())
+        }
+    }
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn watch_screenshots_for_instance(handle: AppHandle, slug: String) -> Result<(), String> {
+    match resources::screenshots::watch_screenshots(handle, &slug) {
+        Ok(_) => Ok(()),
+        Err(e) => {
+            error!(
+                "Failed to start screenshot watcher for slug {}: {}",
+                slug, e
+            );
+            Err(e.to_string())
+        }
+    }
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn stop_watching_screenshots() -> Result<(), String> {
+    resources::screenshots::stop_watching_screenshots();
+    Ok(())
 }
