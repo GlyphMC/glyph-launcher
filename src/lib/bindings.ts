@@ -203,6 +203,14 @@ export const commands = {
 			else return { status: "error", error: e as any };
 		}
 	},
+	async openScreenshotsDir(slug: string): Promise<Result<null, string>> {
+		try {
+			return { status: "ok", data: await TAURI_INVOKE("open_screenshots_dir", { slug }) };
+		} catch (e) {
+			if (e instanceof Error) throw e;
+			else return { status: "error", error: e as any };
+		}
+	},
 	async watchScreenshotsForInstance(slug: string): Promise<Result<null, string>> {
 		try {
 			return { status: "ok", data: await TAURI_INVOKE("watch_screenshots_for_instance", { slug }) };

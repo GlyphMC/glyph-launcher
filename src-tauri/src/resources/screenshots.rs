@@ -35,6 +35,17 @@ fn get_screenshots_dir(slug: String) -> Result<PathBuf, Error> {
     Ok(screenshots_dir)
 }
 
+pub fn open_screenshots_dir(slug: String) -> Result<(), Error> {
+    let screenshots_dir = get_screenshots_dir(slug)?;
+    if let Err(e) = open::that(screenshots_dir) {
+        return Err(Error::msg(format!(
+            "Failed to open screenshots directory: {}",
+            e
+        )));
+    }
+    Ok(())
+}
+
 pub fn get_screenshots(slug: String) -> Result<Vec<Screenshot>, Error> {
     let screenshots_dir = get_screenshots_dir(slug)?;
     let mut screenshots = Vec::new();

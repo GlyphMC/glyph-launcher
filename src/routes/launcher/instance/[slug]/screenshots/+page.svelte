@@ -3,6 +3,8 @@
 	import { commands, events, type Screenshot } from "$lib/bindings";
 	import { onDestroy, onMount } from "svelte";
 	import type { UnlistenFn } from "@tauri-apps/api/event";
+	import { Button } from "$lib/components/ui/button";
+	import { open } from "@tauri-apps/plugin-shell";
 
 	async function fetchScreenshots(instanceSlug: string): Promise<Screenshot[]> {
 		const res = await commands.getScreenshots(instanceSlug);
@@ -40,6 +42,10 @@
 		unlisten?.();
 		commands.stopWatchingScreenshots();
 	});
+
+	async function openScreenshotsDir() {
+		await commands.openScreenshotsDir(instanceSlug);
+	}
 </script>
 
 {#snippet screenshotCard(screenshot: Screenshot)}
@@ -67,6 +73,8 @@
 					{@render screenshotCard(screenshot)}
 				{/each}
 			</div>
+
+			<Button class="fixed bottom-6 right-6" onclick={openScreenshotsDir}>Open Folder</Button>
 		{:else}
 			<p class="text-center text-lg">No screenshots available for this instance.</p>
 		{/if}

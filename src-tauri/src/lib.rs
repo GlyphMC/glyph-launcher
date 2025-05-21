@@ -59,6 +59,7 @@ pub fn run() {
             commands::save_launcher_settings,
             commands::get_avatar,
             commands::get_screenshots,
+            commands::open_screenshots_dir,
             commands::watch_screenshots_for_instance,
             commands::stop_watching_screenshots
         ])

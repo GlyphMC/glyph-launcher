@@ -302,6 +302,18 @@ pub fn get_screenshots(slug: String) -> Result<Vec<Screenshot>, String> {
 
 #[tauri::command]
 #[specta::specta]
+pub fn open_screenshots_dir(slug: String) -> Result<(), String> {
+    match resources::screenshots::open_screenshots_dir(slug) {
+        Ok(_) => Ok(()),
+        Err(e) => {
+            error!("Failed to open screenshots directory: {}", e);
+            Err(e.to_string())
+        }
+    }
+}
+
+#[tauri::command]
+#[specta::specta]
 pub async fn watch_screenshots_for_instance(handle: AppHandle, slug: String) -> Result<(), String> {
     match resources::screenshots::watch_screenshots(handle, &slug) {
         Ok(_) => Ok(()),
