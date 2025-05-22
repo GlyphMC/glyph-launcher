@@ -204,21 +204,21 @@ pub async fn launch_instance(
     }
 }
 
-/* #[tauri::command]
+#[tauri::command]
 #[specta::specta]
 pub async fn kill_instance(
     state: State<'_, AppState>,
     handle: AppHandle,
     slug: String,
 ) -> Result<(), String> {
-    match resources::launch::kill_instance(&state, &handle, &slug).await {
+    match resources::launch::kill_instance(state, handle, &slug).await {
         Ok(_) => Ok(()),
         Err(e) => {
             error!("Failed to kill instance {}: {}", slug, e);
             Err(e.to_string())
         }
     }
-} */
+}
 
 #[tauri::command]
 #[specta::specta]

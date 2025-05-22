@@ -108,14 +108,13 @@
 
 	async function killInstance() {
 		if (!isRunning) return;
-		console.log("Not implemented yet");
-		/* await commands.killInstance(data.slug).then((res) => {
+		await commands.killInstance(data.slug).then((res) => {
 			if (res.status === "ok") {
 				console.log("Instance killed successfully");
 			} else {
 				console.error("Failed to kill instance:", res.error);
 			}
-		}); */
+		});
 	}
 
 	async function getInstance() {
@@ -162,11 +161,6 @@
 		let unlistenFns: UnlistenFn[] = [];
 
 		const setupEventListeners = async () => {
-			const label = `${instance?.slug}`.replaceAll(".", "_");
-
-			const instanceStartedEvent = `${label}-instance-started`;
-			const instanceStoppedEvent = `${label}-instance-stopped`;
-
 			unlistenFns.push(
 				await events.instanceStartedEvent.listen((event) => {
 					console.log("Instance started event received");

@@ -14,20 +14,18 @@ pub enum GpuPreference {
 
 pub fn set_gpu_preference(java_path: &str, preference: GpuPreference) -> Result<(), Error> {
     let hkcu = RegKey::predef(HKEY_CURRENT_USER);
-    let (gpu_pref_key, _) =
-        hkcu.create_subkey("Software\\Microsoft\\DirectX\\UserGpuPreferences")?;
+    let (key, _) = hkcu.create_subkey("Software\\Microsoft\\DirectX\\UserGpuPreferences")?;
 
     let absolute_path = dunce::canonicalize(java_path)?
         .to_string_lossy()
         .replace('/', "\\");
 
-    let gpu_preference_value = match preference {
+    let value = match preference {
         GpuPreference::Integrated => "GpuPreference=1;",
         GpuPreference::Discrete => "GpuPreference=2;",
     };
 
-    gpu_pref_key
-        .set_value(&absolute_path, &gpu_preference_value)
+    key.set_value(&absolute_path, &value)
         .map_err(|e| anyhow!("Failed to write GPU preference to registry: {}", e))?;
 
     Ok(())
@@ -35,7 +33,7 @@ pub fn set_gpu_preference(java_path: &str, preference: GpuPreference) -> Result<
 
 pub fn delete_gpu_preference(java_path: &str) -> Result<(), Error> {
     let hkcu = RegKey::predef(HKEY_CURRENT_USER);
-    let gpu_pref_key = hkcu.open_subkey_with_flags(
+    let key = hkcu.open_subkey_with_flags(
         "Software\\Microsoft\\DirectX\\UserGpuPreferences",
         KEY_WRITE,
     )?;
@@ -44,8 +42,7 @@ pub fn delete_gpu_preference(java_path: &str) -> Result<(), Error> {
         .to_string_lossy()
         .replace('/', "\\");
 
-    gpu_pref_key
-        .delete_value(&absolute_path)
+    key.delete_value(&absolute_path)
         .map_err(|e| anyhow!("Failed to delete GPU preference from registry: {}", e))?;
 
     Ok(())

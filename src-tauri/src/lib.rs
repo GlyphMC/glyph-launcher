@@ -51,7 +51,7 @@ pub fn run() {
             commands::update_instance,
             commands::delete_instance,
             commands::launch_instance,
-            // commands::kill_instance,
+            commands::kill_instance,
             commands::get_versions,
             commands::set_discord_activity,
             commands::toggle_discord_rpc,
