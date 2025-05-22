@@ -226,6 +226,38 @@ export const commands = {
 			if (e instanceof Error) throw e;
 			else return { status: "error", error: e as any };
 		}
+	},
+	async getWorlds(slug: string): Promise<Result<World[], string>> {
+		try {
+			return { status: "ok", data: await TAURI_INVOKE("get_worlds", { slug }) };
+		} catch (e) {
+			if (e instanceof Error) throw e;
+			else return { status: "error", error: e as any };
+		}
+	},
+	async openWorldsDir(slug: string): Promise<Result<null, string>> {
+		try {
+			return { status: "ok", data: await TAURI_INVOKE("open_worlds_dir", { slug }) };
+		} catch (e) {
+			if (e instanceof Error) throw e;
+			else return { status: "error", error: e as any };
+		}
+	},
+	async openWorldDir(slug: string, worldName: string): Promise<Result<null, string>> {
+		try {
+			return { status: "ok", data: await TAURI_INVOKE("open_world_dir", { slug, worldName }) };
+		} catch (e) {
+			if (e instanceof Error) throw e;
+			else return { status: "error", error: e as any };
+		}
+	},
+	async deleteWorld(slug: string, worldName: string): Promise<Result<null, string>> {
+		try {
+			return { status: "ok", data: await TAURI_INVOKE("delete_world", { slug, worldName }) };
+		} catch (e) {
+			if (e instanceof Error) throw e;
+			else return { status: "error", error: e as any };
+		}
 	}
 };
 
@@ -307,6 +339,7 @@ export type Settings = {
 };
 export type Skin = { id: string; state: string; url: string; variant: string };
 export type Version = { id: string; type: string; url: string; time: string; releaseTime: string; sha1: string; complianceLevel: number };
+export type World = { path: string; folderName: string; levelName: string; lastPlayed: string; icon: string | null };
 
 /** tauri-specta globals **/
 

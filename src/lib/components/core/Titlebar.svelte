@@ -1,9 +1,5 @@
 <script lang="ts">
-	import Minus from "lucide-svelte/icons/minus";
-	import ChevronUp from "lucide-svelte/icons/chevron-up";
-	import ChevronDown from "lucide-svelte/icons/chevron-down";
-	import X from "lucide-svelte/icons/x";
-	import { Component } from "lucide-svelte";
+	import { ChevronDown, ChevronUp, Component, Minus, X } from "@lucide/svelte";
 	import { getCurrentWindow } from "@tauri-apps/api/window";
 	import { onMount } from "svelte";
 

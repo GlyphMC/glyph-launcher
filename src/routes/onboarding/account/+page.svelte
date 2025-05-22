@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { Button } from "$lib/components/ui/button";
-	import MoveRight from "lucide-svelte/icons/move-right";
-	import MoveLeft from "lucide-svelte/icons/move-left";
+	import { MoveRight, MoveLeft } from "@lucide/svelte";
 	import LoginPopUp from "$lib/components/core/LoginPopUp.svelte";
 	import { onboardingController } from "$lib/controllers/OnboardingController.svelte";
 	import { useAvatar } from "$lib/utils/AvatarUtils";

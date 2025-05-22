@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { Skeleton } from "$lib/components/ui/skeleton/index";
-	import { cn } from "$lib/utils";
+	import { Skeleton } from "$lib/components/ui/skeleton/index.js";
+	import { cn } from "$lib/utils.js";
 	import type { WithElementRef } from "bits-ui";
 	import type { HTMLAttributes } from "svelte/elements";
 
@@ -22,6 +22,6 @@
 	{#if showIcon}
 		<Skeleton class="size-4 rounded-md" data-sidebar="menu-skeleton-icon" />
 	{/if}
-	<Skeleton class="h-4 max-w-[--skeleton-width] flex-1" data-sidebar="menu-skeleton-text" style="--skeleton-width: {width};" />
+	<Skeleton class="h-4 max-w-[var(--skeleton-width)] flex-1" data-sidebar="menu-skeleton-text" style="--skeleton-width: {width};" />
 	{@render children?.()}
 </div>

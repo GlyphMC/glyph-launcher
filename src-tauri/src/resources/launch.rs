@@ -10,7 +10,7 @@ use anyhow::{Error, Result, anyhow};
 use chrono::Utc;
 use discord_rich_presence::DiscordIpcClient;
 use futures::try_join;
-use log::{error, info};
+use log::{error, info, warn};
 use serde::{Deserialize, Serialize};
 use specta::Type;
 use tauri::{AppHandle, State};
@@ -19,7 +19,7 @@ use tokio::{sync::Mutex, time::Instant};
 use walkdir::WalkDir;
 
 use crate::{
-    AppState, config, discord,
+    AppState, ProcessHandle, RunningInstancesMap, config, discord,
     instance::Instance,
     resources::{
         assets::AssetManager,
@@ -126,6 +126,7 @@ pub async fn launch(
 
     let config_dir = config::get_config_dir()?;
     let discord_client_state = &state.discord_client;
+    let running_instances_map = state.running_instances.clone();
 
     let (needs_asset_download, version_manifest) = {
         let instances_config = state.instances.lock().await;
@@ -173,6 +174,7 @@ pub async fn launch(
         &version_manifest,
         &handle,
         discord_client_state,
+        running_instances_map,
     )
     .await;
 
@@ -208,6 +210,7 @@ async fn launch_game(
     version_manifest: &VersionManifest,
     handle: &AppHandle,
     discord_client_state: &Arc<Mutex<Option<DiscordIpcClient>>>,
+    running_instances_map: Arc<Mutex<RunningInstancesMap>>,
 ) -> Result<(), Error> {
     let config = config::get_config()?;
     let config_dir = config::get_config_dir()?;
@@ -217,12 +220,15 @@ async fn launch_game(
     let assets_dir = config_dir.join("assets");
 
     if config.rich_presence {
-        discord::set_activity(
+        if let Err(e) = discord::set_activity(
             discord_client_state,
             format!("Playing {}", instance.name),
             format!("Version: {}", instance.game.version),
         )
-        .await?;
+        .await
+        {
+            warn!("Failed to set Discord activity (playing): {:?}", e);
+        }
     }
 
     let account = config
@@ -296,10 +302,16 @@ async fn launch_game(
 
     let formatted_slug = instance.slug.replace(".", "_");
 
-    let mut child = command
+    let child_for_handle = command
         .stdout(Stdio::piped())
         .spawn()
         .map_err(|e| Error::msg(format!("Failed to launch game: {}", e)))?;
+
+    let process_handle: ProcessHandle = Arc::new(Mutex::new(Some(child_for_handle)));
+    {
+        let mut running_instances = running_instances_map.lock().await;
+        running_instances.insert(instance.slug.clone(), Arc::clone(&process_handle));
+    }
 
     InstanceStartedEvent {
         slug: &formatted_slug,
@@ -307,10 +319,14 @@ async fn launch_game(
     }
     .emit(handle)?;
 
-    let stdout = child
-        .stdout
-        .take()
-        .ok_or_else(|| anyhow!("Failed to capture stdout from game process"))?;
+    let stdout = process_handle
+        .lock()
+        .await
+        .as_mut()
+        .and_then(|c| c.stdout.take())
+        .ok_or_else(|| {
+            anyhow!("Failed to capture stdout from game process after storing handle")
+        })?;
 
     let stdout_handle = handle.clone();
     let log_slug = formatted_slug.clone();
@@ -331,9 +347,23 @@ async fn launch_game(
         }
     });
 
-    let status = child
-        .wait()
-        .map_err(|e| Error::msg(format!("Failed to wait for game process: {}", e)))?;
+    let status = {
+        let mut child_opt = process_handle.lock().await;
+        if let Some(mut child_to_wait_on) = child_opt.take() {
+            child_to_wait_on
+                .wait()
+                .map_err(|e| Error::msg(format!("Failed to wait for game process: {}", e)))
+        } else {
+            Err(anyhow!(
+                "Game process was already taken or None when trying to wait"
+            ))
+        }
+    }?;
+
+    {
+        let mut running_instances = running_instances_map.lock().await;
+        running_instances.remove(&instance.slug);
+    }
 
     InstanceStoppedEvent {
         slug: &formatted_slug,
@@ -349,12 +379,15 @@ async fn launch_game(
     }
 
     if config.rich_presence {
-        discord::set_activity(
+        if let Err(e) = discord::set_activity(
             discord_client_state,
             "Exploring the Launcher".to_string(),
             "Idle".to_string(),
         )
-        .await?;
+        .await
+        {
+            warn!("Failed to set Discord activity (idle): {:?}", e);
+        }
     }
 
     if !status.success() {

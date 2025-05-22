@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use anyhow::{Error, anyhow};
 use discord_rich_presence::{DiscordIpc, DiscordIpcClient, activity::Activity};
-use log::{error, info};
+use log::{info, warn};
 use tokio::sync::Mutex;
 
 pub const DISCORD_APP_ID: &str = "1112468903336083477";
@@ -60,13 +60,13 @@ pub async fn set_activity(
         if let Some(client) = guard.as_mut() {
             let activity = Activity::new().details(&details).state(&state);
             client.set_activity(activity).map_err(|e| {
-                error!("Failed to set Discord activity: {}", e);
+                warn!("Failed to set Discord activity: {}", e);
                 anyhow!("Failed to set activity: {}", e)
             })?;
             info!("Discord activity set: {} - {}", details, state);
             Ok(())
         } else {
-            error!("Discord client not connected, cannot set activity.");
+            warn!("Discord client not connected, cannot set activity.");
             Err(anyhow!("Discord client not connected"))
         }
     })
@@ -82,7 +82,7 @@ pub fn close_rpc(discord_client_state: &Arc<Mutex<Option<DiscordIpcClient>>>) {
         let mut guard = discord_client_state.blocking_lock();
         if let Some(mut client) = guard.take() {
             if let Err(e) = client.close() {
-                error!("Error while closing Discord RPC connection: {}", e);
+                warn!("Error while closing Discord RPC connection: {}", e);
             } else {
                 info!("Discord RPC connection closed.");
             }
@@ -103,7 +103,7 @@ pub async fn toggle_rpc(
             drop(guard);
             info!("RPC toggled on. Attempting to connect.");
             connect(discord_client_state).await.map_err(|e| {
-                error!("Failed to connect Discord RPC: {}", e);
+                warn!("Failed to connect Discord RPC: {}", e);
                 e
             })?;
         } else {

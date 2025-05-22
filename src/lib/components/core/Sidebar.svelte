@@ -5,7 +5,7 @@
 	import * as DropdownMenu from "$lib/components/ui/dropdown-menu";
 	import { ScrollArea } from "$lib/components/ui/scroll-area";
 	import { Separator } from "$lib/components/ui/separator";
-	import ChevronUp from "lucide-svelte/icons/chevron-up";
+	import { ChevronUp } from "@lucide/svelte";
 	import { onDestroy, onMount } from "svelte";
 	import LoginPopUp from "./LoginPopUp.svelte";
 	import { SidebarController } from "$lib/controllers/SidebarController.svelte";

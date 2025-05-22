@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { Progress as ProgressPrimitive, type WithoutChildrenOrChild } from "bits-ui";
-	import { cn } from "$lib/utils";
+	import { cn } from "$lib/utils.js";
 
 	let { ref = $bindable(null), class: className, max = 100, value, ...restProps }: WithoutChildrenOrChild<ProgressPrimitive.RootProps> = $props();
 </script>

@@ -14,7 +14,7 @@ use crate::{
     discord,
     instance::Instance,
     java::{self, structs::JavaConfig, test::JavaTestInfo},
-    resources::{self, screenshots::Screenshot, versions::Version},
+    resources::{self, screenshots::Screenshot, versions::Version, worlds::World},
 };
 
 #[tauri::command]
@@ -332,4 +332,56 @@ pub async fn watch_screenshots_for_instance(handle: AppHandle, slug: String) -> 
 pub fn stop_watching_screenshots() -> Result<(), String> {
     resources::screenshots::stop_watching_screenshots();
     Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn get_worlds(slug: String) -> Result<Vec<World>, String> {
+    match resources::worlds::get_worlds(slug) {
+        Ok(worlds) => Ok(worlds),
+        Err(e) => {
+            error!("Failed to get worlds: {}", e);
+            Err(e.to_string())
+        }
+    }
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn open_worlds_dir(slug: String) -> Result<(), String> {
+    match resources::worlds::open_worlds_dir(slug) {
+        Ok(_) => Ok(()),
+        Err(e) => {
+            error!("Failed to open worlds directory: {}", e);
+            Err(e.to_string())
+        }
+    }
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn open_world_dir(slug: String, world_name: String) -> Result<(), String> {
+    match resources::worlds::open_world_dir(slug, world_name) {
+        Ok(_) => Ok(()),
+        Err(e) => {
+            error!("Failed to open world directory: {}", e);
+            Err(e.to_string())
+        }
+    }
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn delete_world(
+    state: State<'_, AppState>,
+    slug: String,
+    world_name: String,
+) -> Result<(), String> {
+    match resources::worlds::delete_world(state, slug, world_name).await {
+        Ok(_) => Ok(()),
+        Err(e) => {
+            error!("Failed to delete world: {}", e);
+            Err(e.to_string())
+        }
+    }
 }

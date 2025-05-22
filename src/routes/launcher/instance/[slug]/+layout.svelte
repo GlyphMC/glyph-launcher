@@ -1,10 +1,7 @@
 <script lang="ts">
 	import { onMount, type Snippet } from "svelte";
 	import type { LayoutData } from "./$types";
-	import Clock from "lucide-svelte/icons/clock";
-	import CalendarClock from "lucide-svelte/icons/calendar-clock";
-	import SquareChevronRight from "lucide-svelte/icons/square-chevron-right";
-	import X from "lucide-svelte/icons/x";
+	import { Clock, CalendarClock, SquareChevronRight, X } from "@lucide/svelte";
 	import { Button } from "$lib/components/ui/button";
 	import InstanceAssetsDownloadPopUp from "$lib/components/core/InstanceAssetsDownloadPopUp.svelte";
 	import { formatDistanceToNow, parseISO } from "date-fns";

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { Button } from "$lib/components/ui/button";
 	import { onboardingController } from "$lib/controllers/OnboardingController.svelte";
-	import MoveRight from "lucide-svelte/icons/move-right";
+	import { MoveRight } from "@lucide/svelte";
 </script>
 
 <div class="group flex min-h-screen select-none flex-col items-center justify-center font-display">

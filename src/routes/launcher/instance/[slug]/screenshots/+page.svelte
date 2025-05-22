@@ -4,7 +4,7 @@
 	import { onDestroy, onMount } from "svelte";
 	import type { UnlistenFn } from "@tauri-apps/api/event";
 	import { Button } from "$lib/components/ui/button";
-	import { open } from "@tauri-apps/plugin-shell";
+	import { Folder } from "@lucide/svelte";
 
 	async function fetchScreenshots(instanceSlug: string): Promise<Screenshot[]> {
 		const res = await commands.getScreenshots(instanceSlug);
@@ -74,7 +74,10 @@
 				{/each}
 			</div>
 
-			<Button class="fixed bottom-6 right-6" onclick={openScreenshotsDir}>Open Folder</Button>
+			<Button class="fixed bottom-6 right-6" onclick={openScreenshotsDir}>
+				<Folder />
+				<span class="sr-only ml-2 sm:not-sr-only">Open Folder</span>
+			</Button>
 		{:else}
 			<p class="text-center text-lg">No screenshots available for this instance.</p>
 		{/if}

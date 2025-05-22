@@ -61,7 +61,11 @@ pub fn run() {
             commands::get_screenshots,
             commands::open_screenshots_dir,
             commands::watch_screenshots_for_instance,
-            commands::stop_watching_screenshots
+            commands::stop_watching_screenshots,
+            commands::get_worlds,
+            commands::open_worlds_dir,
+            commands::open_world_dir,
+            commands::delete_world,
         ])
         .events(collect_events![
             auth::auth::LoginDetailsEvent,

@@ -4,3 +4,4 @@ pub mod launch;
 pub mod screenshots;
 pub mod version;
 pub mod versions;
+pub mod worlds;

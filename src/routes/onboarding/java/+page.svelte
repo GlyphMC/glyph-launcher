@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { Button } from "$lib/components/ui/button";
-	import MoveRight from "lucide-svelte/icons/move-right";
-	import MoveLeft from "lucide-svelte/icons/move-left";
+	import { MoveLeft, MoveRight } from "@lucide/svelte";
 	import JavaDownloadPopUp from "$lib/components/core/JavaDownloadPopUp.svelte";
 	import ManualJavaSetup from "$lib/components/core/ManualJavaSetup.svelte";
 	import { onboardingController } from "$lib/controllers/OnboardingController.svelte";
