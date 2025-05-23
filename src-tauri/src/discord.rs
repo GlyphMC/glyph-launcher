@@ -96,7 +96,7 @@ pub async fn toggle_rpc(
     discord_client_state: &Arc<Mutex<Option<DiscordIpcClient>>>,
     enabled: bool,
 ) -> Result<(), Error> {
-    let guard = discord_client_state.blocking_lock();
+    let guard = discord_client_state.lock().await;
 
     if enabled {
         if guard.is_none() {

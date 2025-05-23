@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onMount, type Snippet } from "svelte";
+	import { onDestroy, onMount, tick, type Snippet } from "svelte";
 	import type { LayoutData } from "./$types";
 	import { Clock, CalendarClock, SquareChevronRight, X } from "@lucide/svelte";
 	import { Button } from "$lib/components/ui/button";
@@ -15,7 +15,7 @@
 
 	let { data, children }: { data: LayoutData; children: Snippet } = $props();
 	let instance = $state<Instance>();
-	let isRunning = $state(false);
+	let isInstanceRunning = $state(false);
 
 	let navLinksContainer = $state<HTMLElement | null>(null);
 	let underlineLeft = $state(0);
@@ -41,54 +41,53 @@
 		};
 
 		if (useViewTransition && document.startViewTransition) {
-			document.startViewTransition(() => {
-				updateStyles();
-			});
+			document.startViewTransition(() => updateStyles());
 		} else {
 			updateStyles();
 		}
 	}
 
+	async function forceUpdateUnderline() {
+		if (!initialUpdateDone || !navLinksContainer) return;
+
+		await tick();
+		updateUnderlinePosition(false);
+	}
+
 	onMount(async () => {
 		await getInstance();
-		requestAnimationFrame(() => {
-			updateUnderlinePosition(false);
-			initialUpdateDone = true;
-		});
+		await tick();
+
+		updateUnderlinePosition(false);
+		initialUpdateDone = true;
+		window.addEventListener("force-underline-update", forceUpdateUnderline);
 	});
 
-	$effect(() => {
+	onDestroy(() => window.removeEventListener("force-underline-update", forceUpdateUnderline));
+
+	$effect.pre(() => {
 		if (navLinksContainer && initialUpdateDone) {
-			const _currentHash = page.url.hash;
-			updateUnderlinePosition(true);
+			page.url.hash; // Trigger update on hash change
+			tick().then(() => updateUnderlinePosition(true));
 		}
 	});
 
 	function formatTimePlayed(totalSeconds: number): string {
-		if (totalSeconds === undefined || totalSeconds === null || totalSeconds === 0) return "Never";
-		if (totalSeconds < 60) {
-			return `${totalSeconds} sec played`;
-		}
+		if (!totalSeconds) return "Never";
+		if (totalSeconds < 60) return `${totalSeconds} sec played`;
+
 		const minutes = Math.floor(totalSeconds / 60);
 		const hours = Math.floor(minutes / 60);
 		const remainingMinutes = minutes % 60;
 
-		if (hours > 0) {
-			return `${hours} hr ${remainingMinutes} min played`;
-		}
-		return `${minutes} min played`;
+		return hours > 0 ? `${hours} hr ${remainingMinutes} min played` : `${minutes} min played`;
 	}
 
 	function formatLastPlayed(isoTimestamp?: string | null): string {
-		if (!isoTimestamp) {
-			return "Never";
-		}
-
+		if (!isoTimestamp) return "Never";
 		try {
-			const date = parseISO(isoTimestamp);
-			return formatDistanceToNow(date, { addSuffix: true });
-		} catch (e) {
-			console.error("Error parsing lastPlayed date:", e);
+			return formatDistanceToNow(parseISO(isoTimestamp), { addSuffix: true });
+		} catch {
 			return "Invalid date";
 		}
 	}
@@ -107,7 +106,7 @@
 	}
 
 	async function killInstance() {
-		if (!isRunning) return;
+		if (!isInstanceRunning) return;
 		await commands.killInstance(data.slug).then((res) => {
 			if (res.status === "ok") {
 				console.log("Instance killed successfully");
@@ -128,7 +127,6 @@
 	}
 
 	async function openLogWindow() {
-		console.log("Opening log window");
 		const label = `${instance?.slug}-log`.replaceAll(".", "_");
 		let logWebview = await WebviewWindow.getByLabel(label);
 
@@ -164,20 +162,19 @@
 			unlistenFns.push(
 				await events.instanceStartedEvent.listen((event) => {
 					console.log("Instance started event received");
-					isRunning = true;
+					isInstanceRunning = true;
 				})
 			);
 
 			unlistenFns.push(
 				await events.instanceStoppedEvent.listen((event) => {
 					console.log("Instance stopped event received");
-					isRunning = false;
+					isInstanceRunning = false;
 				})
 			);
 		};
 
 		setupEventListeners();
-
 		return () => unlistenFns.forEach((unlisten) => unlisten());
 	};
 </script>
@@ -200,12 +197,12 @@
 	</div>
 
 	<div class="ml-10 mt-8 flex space-x-2">
-		{#if isRunning}
+		{#if isInstanceRunning}
 			<Button class="w-30 bg-red-600 px-10 hover:bg-red-700" onclick={killInstance}>
 				<X class="mr-2 size-4" /> Stop
 			</Button>
 		{:else}
-			<Button class="w-30 px-10" onclick={launchInstance} disabled={isRunning}>Launch</Button>
+			<Button class="w-30 px-10" onclick={launchInstance} disabled={isInstanceRunning}>Launch</Button>
 		{/if}
 		<Button variant="outline" class="w-24 px-10" onclick={openLogWindow}>
 			<SquareChevronRight /> Logs

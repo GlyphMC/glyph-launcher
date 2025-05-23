@@ -21,7 +21,6 @@
 	let worldsPromise: Promise<World[]> = $state(Promise.resolve([]));
 	const instanceSlug = page.params.slug;
 	let deleteDialogOpen = $state(false);
-	$inspect(deleteDialogOpen);
 
 	onMount(() => {
 		worldsPromise = fetchWorlds(instanceSlug).then((data) => {
