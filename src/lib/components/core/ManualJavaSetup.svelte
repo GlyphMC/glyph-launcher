@@ -16,15 +16,24 @@
 	let javaTestResults = $state<JavaTestInfo[]>([]);
 	let showManualJavaTestPopup = $state(false);
 
-	onMount(async () => await getJavaFromConfig());
+	onMount(async () => {
+		await getJavaFromConfig();
+
+		if (prefilledPaths) {
+			if (prefilledPaths.java8) manualJava8.path = prefilledPaths.java8;
+			if (prefilledPaths.java17) manualJava17.path = prefilledPaths.java17;
+			if (prefilledPaths.java21) manualJava21.path = prefilledPaths.java21;
+		}
+	});
 
 	async function getJavaFromConfig() {
 		await commands.getJavaFromConfig().then((res) => {
 			if (res.status === "ok") {
 				let { java8Path, java17Path, java21Path } = res.data;
-				manualJava8.path = java8Path;
-				manualJava17.path = java17Path;
-				manualJava21.path = java21Path;
+
+				if (!prefilledPaths?.java8) manualJava8.path = java8Path;
+				if (!prefilledPaths?.java17) manualJava17.path = java17Path;
+				if (!prefilledPaths?.java21) manualJava21.path = java21Path;
 			} else {
 				console.error("Failed to get Java from config:", res.error);
 			}
@@ -51,9 +60,14 @@
 
 	type Props = {
 		onComplete?: () => void;
+		prefilledPaths?: {
+			java8: string | null;
+			java17: string | null;
+			java21: string | null;
+		};
 	};
 
-	let { onComplete }: Props = $props();
+	let { onComplete, prefilledPaths }: Props = $props();
 </script>
 
 {#if showManualJavaTestPopup}

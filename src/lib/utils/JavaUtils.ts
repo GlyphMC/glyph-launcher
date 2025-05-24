@@ -21,23 +21,7 @@ export type JavaProgress = {
 	extract: { [key: number]: number };
 };
 
-export type DownloadPaths = {
-	paths: string[];
-};
-
 export type ManualJava = {
 	version: 8 | 17 | 21;
 	path: string;
-};
-
-export type JavaTestInfo = {
-	valid: boolean;
-	version: string;
-	vendor: string;
-	expectedVersion: number;
-	versionMismatch: boolean;
-};
-
-export type ProgressEvent = {
-	percentage: number;
 };

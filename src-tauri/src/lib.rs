@@ -40,6 +40,7 @@ pub fn run() {
             commands::delete_account,
             commands::get_active_account,
             commands::get_minecraft_profiles,
+            commands::detect_java,
             commands::download_java,
             commands::extract_java,
             commands::test_java,

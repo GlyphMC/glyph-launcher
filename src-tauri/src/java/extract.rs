@@ -2,7 +2,7 @@ use std::path::{Component, PathBuf};
 
 use anyhow::{Error, Ok, Result, anyhow};
 use async_zip::tokio::read::seek::ZipFileReader;
-use futures::try_join;
+use futures::future::try_join_all;
 use log::info;
 use serde::{Deserialize, Serialize};
 use specta::Type;
@@ -31,28 +31,32 @@ pub struct JavaExtractFinishedEvent {
 
 pub async fn extract_java(
     handle: AppHandle,
-    paths: (PathBuf, PathBuf, PathBuf),
-) -> Result<(PathBuf, PathBuf, PathBuf), Error> {
-    let (java_8_path, java_17_path, java_21_path) = paths;
+    paths: Vec<PathBuf>,
+    versions: Vec<i8>,
+) -> Result<Vec<PathBuf>, Error> {
+    if paths.len() != versions.len() {
+        return Err(anyhow!("Number of paths and versions must match"));
+    }
 
     JavaExtractStartedEvent("Extract started".to_string()).emit(&handle)?;
 
-    let (output_dir_8, output_dir_17, output_dir_21) = try_join!(
-        extract_java_archive(&handle, 8, &java_8_path),
-        extract_java_archive(&handle, 17, &java_17_path),
-        extract_java_archive(&handle, 21, &java_21_path)
-    )?;
+    let mut extract_futures = Vec::new();
+    for (i, path) in paths.iter().enumerate() {
+        let version = versions[i];
+        extract_futures.push(extract_java_archive(&handle, version, path));
+    }
+
+    let output_dirs = try_join_all(extract_futures).await?;
 
     JavaExtractFinishedEvent {
-        paths: vec![
-            output_dir_8.to_string_lossy().to_string(),
-            output_dir_17.to_string_lossy().to_string(),
-            output_dir_21.to_string_lossy().to_string(),
-        ],
+        paths: output_dirs
+            .iter()
+            .map(|p| p.to_string_lossy().to_string())
+            .collect(),
     }
     .emit(&handle)?;
 
-    Ok((output_dir_8, output_dir_17, output_dir_21))
+    Ok(output_dirs)
 }
 
 async fn extract_java_archive(

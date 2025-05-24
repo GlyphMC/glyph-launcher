@@ -1,7 +1,7 @@
 use std::{env, path::PathBuf};
 
 use anyhow::{Error, Result, anyhow};
-use futures::try_join;
+use futures::future::try_join_all;
 use log::{debug, info};
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
@@ -31,7 +31,8 @@ pub struct JavaDownloadFinishedEvent {
 pub async fn download_java(
     state: &State<'_, AppState>,
     handle: AppHandle,
-) -> Result<(PathBuf, PathBuf, PathBuf), Error> {
+    versions: Vec<i8>,
+) -> Result<Vec<PathBuf>, Error> {
     JavaDownloadStartedEvent("Download started".into()).emit(&handle)?;
 
     let client = state.client.lock().await;
@@ -44,26 +45,22 @@ pub async fn download_java(
     }
     tokio::fs::create_dir_all(&runtime_dir).await?;
 
-    let (java_8_archive_path, java_17_archive_path, java_21_archive_path) = try_join!(
-        download_java_version(8, &client, &handle),
-        download_java_version(17, &client, &handle),
-        download_java_version(21, &client, &handle)
-    )?;
+    let mut download_futures = Vec::new();
+    for version in &versions {
+        download_futures.push(download_java_version(*version, &client, &handle));
+    }
+
+    let paths = try_join_all(download_futures).await?;
 
     JavaDownloadFinishedEvent {
-        paths: vec![
-            java_8_archive_path.to_string_lossy().to_string(),
-            java_17_archive_path.to_string_lossy().to_string(),
-            java_21_archive_path.to_string_lossy().to_string(),
-        ],
+        paths: paths
+            .iter()
+            .map(|p| p.to_string_lossy().to_string())
+            .collect(),
     }
     .emit(&handle)?;
 
-    Ok((
-        java_8_archive_path,
-        java_17_archive_path,
-        java_21_archive_path,
-    ))
+    Ok(paths)
 }
 
 async fn download_java_version(

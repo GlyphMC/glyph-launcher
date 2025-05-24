@@ -59,17 +59,25 @@ export const commands = {
 			else return { status: "error", error: e as any };
 		}
 	},
-	async downloadJava(): Promise<Result<[string, string, string], string>> {
+	async detectJava(): Promise<Result<[string | null, string | null, string | null], string>> {
 		try {
-			return { status: "ok", data: await TAURI_INVOKE("download_java") };
+			return { status: "ok", data: await TAURI_INVOKE("detect_java") };
 		} catch (e) {
 			if (e instanceof Error) throw e;
 			else return { status: "error", error: e as any };
 		}
 	},
-	async extractJava(paths: [string, string, string]): Promise<Result<[string, string, string], string>> {
+	async downloadJava(versions: number[]): Promise<Result<string[], string>> {
 		try {
-			return { status: "ok", data: await TAURI_INVOKE("extract_java", { paths }) };
+			return { status: "ok", data: await TAURI_INVOKE("download_java", { versions }) };
+		} catch (e) {
+			if (e instanceof Error) throw e;
+			else return { status: "error", error: e as any };
+		}
+	},
+	async extractJava(paths: string[], versions: number[]): Promise<Result<string[], string>> {
+		try {
+			return { status: "ok", data: await TAURI_INVOKE("extract_java", { paths, versions }) };
 		} catch (e) {
 			if (e instanceof Error) throw e;
 			else return { status: "error", error: e as any };

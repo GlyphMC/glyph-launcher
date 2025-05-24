@@ -13,7 +13,7 @@ use crate::{
     config::{self, LauncherSettings},
     discord,
     instance::Instance,
-    java::{self, structs::JavaConfig, test::JavaTestInfo},
+    java::{self, detect::JavaDetectionResult, structs::JavaConfig, test::JavaTestInfo},
     resources::{self, screenshots::Screenshot, versions::Version, worlds::World},
 };
 
@@ -82,26 +82,35 @@ pub fn get_active_account() -> Result<Option<Account>, String> {
 
 #[tauri::command]
 #[specta::specta]
+pub fn detect_java() -> Result<JavaDetectionResult, String> {
+    let (java8, java17, java21) = java::detect::detect_java().map_err(|e| e.to_string())?;
+    Ok((java8, java17, java21))
+}
+
+#[tauri::command]
+#[specta::specta]
 pub async fn download_java(
     state: State<'_, AppState>,
     handle: AppHandle,
-) -> Result<(PathBuf, PathBuf, PathBuf), String> {
-    let paths = java::download::download_java(&state, handle)
+    versions: Vec<i8>,
+) -> Result<Vec<PathBuf>, String> {
+    let paths = java::download::download_java(&state, handle, versions)
         .await
         .map_err(|e| e.to_string())?;
-    Ok((paths.0, paths.1, paths.2))
+    Ok(paths)
 }
 
 #[tauri::command]
 #[specta::specta]
 pub async fn extract_java(
     handle: AppHandle,
-    paths: (PathBuf, PathBuf, PathBuf),
-) -> Result<(PathBuf, PathBuf, PathBuf), String> {
-    let paths = java::extract::extract_java(handle, paths)
+    paths: Vec<PathBuf>,
+    versions: Vec<i8>,
+) -> Result<Vec<PathBuf>, String> {
+    let output_paths = java::extract::extract_java(handle, paths, versions)
         .await
         .map_err(|e| e.to_string())?;
-    Ok((paths.0, paths.1, paths.2))
+    Ok(output_paths)
 }
 
 #[tauri::command]
