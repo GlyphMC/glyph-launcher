@@ -14,10 +14,16 @@ pub fn detect_java() -> Result<JavaDetectionResult> {
     let mut java17 = None;
     let mut java21 = None;
 
-    let output = Command::new(COMMAND)
-        .arg("java")
+    let mut command_builder = Command::new(COMMAND);
+
+    if cfg!(not(target_os = "windows")) {
+        command_builder.arg("-a");
+    }
+    command_builder.arg("java");
+
+    let output = command_builder
         .output()
-        .context("Failed to run PATH detection for Java")?;
+        .with_context(|| format!("Failed to run `{}` command", COMMAND))?;
 
     if !output.status.success() {
         return Ok((None, None, None));

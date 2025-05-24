@@ -273,13 +273,20 @@ fn configure_launch_command(
     }
 
     #[cfg(target_os = "linux")]
-    if config.use_discrete_gpu {
-        command
-            .env("DRI_PRIME", "1")
-            .env("__NV_PRIME_RENDER_OFFLOAD", "1")
-            .env("__VK_LAYER_NV_optimus", "NVIDIA_only")
-            .env("__GLX_VENDOR_LIBRARY_NAME", "nvidia");
+    {
+        if config.use_discrete_gpu {
+            command
+                .env("DRI_PRIME", "1")
+                .env("__NV_PRIME_RENDER_OFFLOAD", "1")
+                .env("__VK_LAYER_NV_optimus", "NVIDIA_only")
+                .env("__GLX_VENDOR_LIBRARY_NAME", "nvidia");
+        }
+
+        if let Ok(ld_library_path) = std::env::var("LD_LIBRARY_PATH") {
+            command.env("LD_LIBRARY_PATH", ld_library_path);
+        }
     }
+
     command
 }
 
@@ -513,7 +520,6 @@ fn construct_classpath(
     Ok(classpath_entries.join(separator))
 }
 
-// TODO: Test on Linux
 pub async fn kill_instance(
     state: State<'_, AppState>,
     handle: AppHandle,

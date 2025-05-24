@@ -53,7 +53,7 @@
 		</button>
 	</div>
 	<div
-		class="flex-grow select-none overflow-y-auto rounded bg-[#181825] p-[8px]"
+		class="flex-grow overflow-y-auto rounded bg-[#181825] p-[8px]"
 		class:whitespace-pre-wrap={wrapLines}
 		class:break-all={wrapLines}
 		class:whitespace-pre={!wrapLines}
