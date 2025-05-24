@@ -80,13 +80,13 @@
 								{/snippet}
 							</DropdownMenu.Trigger>
 							<DropdownMenu.Content side="top" class="w-[--bits-dropdown-menu-anchor-width]">
-								<DropdownMenu.Item onclick={controller.navigateToAccounts}>
+								<DropdownMenu.Item onclick={() => controller.navigateToAccounts()}>
 									<span>Accounts</span>
 								</DropdownMenu.Item>
-								<DropdownMenu.Item onclick={controller.navigateToSettings}>
+								<DropdownMenu.Item onclick={() => controller.navigateToSettings()}>
 									<span>Settings</span>
 								</DropdownMenu.Item>
-								<DropdownMenu.Item onclick={controller.logout}>
+								<DropdownMenu.Item onclick={() => controller.logout()}>
 									<span>Logout</span>
 								</DropdownMenu.Item>
 							</DropdownMenu.Content>
@@ -94,7 +94,7 @@
 					</Sidebar.MenuItem>
 				</Sidebar.Menu>
 			{:else}
-				<Button variant="default" onclick={controller.login}>Login</Button>
+				<Button variant="default" onclick={() => controller.login()}>Login</Button>
 			{/if}
 		</Sidebar.Footer>
 	</div>

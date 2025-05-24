@@ -71,7 +71,8 @@ export class SidebarController {
 	}
 
 	async logout() {
-		console.log("logout");
+		await this.loadMinecraftProfiles();
+
 		if (!this.selectedProfile) {
 			console.warn("No profile selected to logout.");
 			return;
@@ -79,7 +80,7 @@ export class SidebarController {
 
 		await commands.deleteAccount(this.selectedProfile.id).then((res) => {
 			if (res.status === "ok") {
-				console.log("Account deleted successfully");
+				this.loadMinecraftProfiles();
 			} else {
 				console.error("Failed to delete account:", res.error);
 			}
